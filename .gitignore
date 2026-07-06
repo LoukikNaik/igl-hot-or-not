@@ -22,3 +22,4 @@ transcripts/*.part
 transcripts/*.ytdl
 transcripts/*.part-*
 logs/
+blocked-ips.txt

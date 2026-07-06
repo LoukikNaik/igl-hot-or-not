@@ -15,6 +15,20 @@ const PUBLIC = path.join(__dirname, 'public');
 const PEOPLE_BY_ID = new Map(PEOPLE.map(p => [p.id, p]));
 const VISIBLE = PEOPLE.filter(p => !p.hidden);  // hidden people keep their data/votes but are excluded from the app
 
+// ---------- IP denylist (edit blocked-ips.txt or BLOCKED_IPS env; server re-reads on boot) ----------
+let BLOCKED_IPS = new Set();
+function loadBlockedIps() {
+  const set = new Set();
+  try {
+    fs.readFileSync(path.join(__dirname, 'blocked-ips.txt'), 'utf8')
+      .split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')).forEach(ip => set.add(ip));
+  } catch {}
+  (process.env.BLOCKED_IPS || '').split(',').map(x => x.trim()).filter(Boolean).forEach(ip => set.add(ip));
+  BLOCKED_IPS = set;
+}
+loadBlockedIps();
+if (BLOCKED_IPS.size) console.log('blocked IPs:', [...BLOCKED_IPS].join(', '));
+
 // ---------- persistence (SQLite) ----------
 // safety: snapshot the DB on every boot so votes survive accidents
 try {
@@ -340,6 +354,7 @@ function applyCors(req, res) {
 
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
+  if (BLOCKED_IPS.has(getIp(req))) { res.writeHead(403); return res.end('forbidden'); }
   applyCors(req, res);
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   if (url.pathname.startsWith('/api/')) {
