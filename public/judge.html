@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Judge Mode — India's Got Latent</title>
+<title>Judge Mode, India's Got Latent</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('igl_theme') || 'black');</script>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -12,11 +13,12 @@
   <div class="links">
     <a href="/">🔥 Face-Off</a>
     <a href="/leaderboard">🏆 Leaderboard</a>
+    <button class="themeToggle" title="Switch theme" aria-label="Switch theme">☀️</button>
   </div>
 </nav>
 <main>
   <h1>Judge <em>Mode</em></h1>
-  <p class="sub">Score every contestant out of 10, like the panel does. After each score you'll see the running audience average — and after the last one, your full episode recap.</p>
+  <p class="sub">Score every contestant out of 10, like the panel does. After each score you'll see the running audience average, and after the last one, your full episode recap.</p>
 
   <div class="chips" id="pools">
     <button class="chip on" data-pool="contestant">All contestants</button>
@@ -65,7 +67,7 @@ function next() {
   if (p.myScore !== null) {
     const note = document.createElement('div');
     note.className = 'progress';
-    note.textContent = `You previously gave ${p.myScore}/10 — pick again to change it.`;
+    note.textContent = `You previously gave ${p.myScore}/10, pick again to change it.`;
     stage.appendChild(note);
   }
 }
@@ -83,7 +85,7 @@ async function submit(p, score, row) {
     <div class="big">${res.avgScore}/10</div>
     <div class="cap">audience average · ${res.scoreCount} vote${res.scoreCount === 1 ? '' : 's'}</div>
     <div class="match ${matched ? 'yes' : 'no'}">
-      ${matched ? '🎯 You matched the audience!' : `You gave ${score} — off by ${diff.toFixed(1)}`}
+      ${matched ? '🎯 You matched the audience!' : `You gave ${score}, off by ${diff.toFixed(1)}`}
     </div>
     ${p.showScore !== null ? `<div class="cap" style="margin-top:8px">On the show they scored <b>${p.showScore}/10</b></div>` : ''}
     <div class="toolbar"><button class="btn primary" id="nextBtn">Next →</button></div>`;
@@ -96,7 +98,7 @@ function recap() {
   document.getElementById('progress').textContent = '';
   const stage = document.getElementById('stage');
   if (!results.length) {
-    stage.innerHTML = '<div class="empty">No one left to score in this filter — you\'ve judged them all. Check the <a href="/leaderboard" style="text-decoration:underline">leaderboard</a>.</div>';
+    stage.innerHTML = '<div class="empty">No one left to score in this filter, you\'ve judged them all. Check the <a href="/leaderboard" style="text-decoration:underline">leaderboard</a>.</div>';
     return;
   }
   const matches = results.filter(r => Math.round(r.avg) === r.mine).length;
@@ -112,7 +114,7 @@ function recap() {
           <td>${r.p.name}</td>
           <td><b>${r.mine}</b></td>
           <td>${r.avg} <span style="color:var(--muted)">(${r.count})</span></td>
-          <td>${r.p.showScore !== null ? r.p.showScore : '—'}</td>
+          <td>${r.p.showScore !== null ? r.p.showScore : '-'}</td>
           <td>${Math.round(r.avg) === r.mine ? '<span class="badge win">🎯 matched</span>' : '<span class="badge dim">off by ' + Math.abs(r.avg - r.mine).toFixed(1) + '</span>'}</td>
         </tr>`).join('')}
     </table>
@@ -134,7 +136,7 @@ if (SHOW_CONTESTANTS) {
   start('contestant');
 } else {
   document.querySelector('main').innerHTML =
-    '<h1>Judge <em>Mode</em></h1><div class="empty" style="margin-top:18px">Contestant scoring is switched off for now — the panelist face-off is live on the <a href="/" style="text-decoration:underline">home page</a>.</div>';
+    '<h1>Judge <em>Mode</em></h1><div class="empty" style="margin-top:18px">Contestant scoring is switched off for now, the panelist face-off is live on the <a href="/" style="text-decoration:underline">home page</a>.</div>';
 }
 </script>
 </body>

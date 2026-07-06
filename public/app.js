@@ -1,6 +1,20 @@
 // UI flag: contestants hidden for now — flip to true to bring them back
 const SHOW_CONTESTANTS = false;
 
+// ---- theme: 'black' (dark) or 'white' (light), persisted ----
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('igl_theme', t);
+  document.querySelectorAll('.themeToggle').forEach(b => b.textContent = t === 'black' ? '☀️' : '🌙');
+}
+function toggleTheme() {
+  applyTheme((localStorage.getItem('igl_theme') || 'black') === 'black' ? 'white' : 'black');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  applyTheme(localStorage.getItem('igl_theme') || 'black');
+  document.querySelectorAll('.themeToggle').forEach(b => b.onclick = toggleTheme);
+});
+
 // Shared helpers: API, photos, card rendering.
 
 const API = {

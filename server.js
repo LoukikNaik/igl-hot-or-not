@@ -19,6 +19,14 @@ let db = { elo: {}, records: {}, faceoffs: {}, ratings: {} };
 // faceoffs: voterId|idA|idB (sorted pair) -> winnerId   (one vote per pair per voter)
 // ratings:  personId -> { voterId -> score 0..10 }      (latest score wins)
 try { db = Object.assign(db, JSON.parse(fs.readFileSync(DB_FILE, 'utf8'))); } catch {}
+// safety: snapshot the vote DB on every boot so votes survive accidents
+try {
+  fs.mkdirSync(path.join(__dirname, 'backups'), { recursive: true });
+  if (fs.existsSync(DB_FILE)) {
+    fs.copyFileSync(DB_FILE, DB_FILE + '.bak');
+    fs.copyFileSync(DB_FILE, path.join(__dirname, 'backups', `db-${new Date().toISOString().slice(0, 10)}.json`));
+  }
+} catch {}
 
 let saveTimer = null;
 function save() {
@@ -130,9 +138,13 @@ function api(req, res, url, body) {
     const key = pairKey(voterId, winnerId, loserId);
     if (key in db.faceoffs) return send(200, { ok: true, duplicate: true });
     db.faceoffs[key] = winnerId;
+    const before = { w: elo(winnerId), l: elo(loserId) };
     applyFaceoff(winnerId, loserId);
     save();
-    return send(200, { ok: true });
+    return send(200, { ok: true,
+      winnerDelta: Math.round(elo(winnerId) - before.w),
+      loserDelta: Math.round(elo(loserId) - before.l),
+      winnerElo: Math.round(elo(winnerId)), loserElo: Math.round(elo(loserId)) });
   }
 
   if (req.method === 'POST' && url.pathname === '/api/score') {
@@ -155,7 +167,12 @@ function api(req, res, url, body) {
     // Audience Winners: contestants whose real show score matches the app audience average
     const audienceWinners = judged.filter(p =>
       p.showScore !== null && p.avgScore !== null && Math.abs(p.avgScore - p.showScore) <= 0.5);
-    return send(200, { hot, judged, audienceWinners });
+    const totals = {
+      faceoffVotes: Object.keys(db.faceoffs).length,
+      scoreVotes: Object.values(db.ratings).reduce((n, r) => n + Object.keys(r).length, 0),
+      people: PEOPLE.length,
+    };
+    return send(200, { hot, judged, audienceWinners, totals });
   }
 
   send(404, { error: 'not found' });

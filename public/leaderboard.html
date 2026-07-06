@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Leaderboard — India's Got Latent</title>
+<title>Leaderboard, India's Got Latent</title>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('igl_theme') || 'black');</script>
 <link rel="stylesheet" href="/app.css">
 </head>
 <body>
@@ -12,31 +13,34 @@
   <div class="links">
     <a href="/">🔥 Face-Off</a>
     <a href="/leaderboard">🏆 Leaderboard</a>
+    <button class="themeToggle" title="Switch theme" aria-label="Switch theme">☀️</button>
   </div>
 </nav>
 <main>
   <h1>The <em>Leaderboard</em></h1>
-  <p class="sub">Live rankings from everyone's votes — face-off Elo for hotness, judge-mode averages for talent.</p>
+  <p class="sub">Live rankings from everyone's votes, face-off Elo for hotness, judge-mode averages for talent. Click anyone for their full profile.</p>
+  <div class="statChips" id="statChips"></div>
 
   <div class="section" id="audienceWinnersSection">
     <h2>🎯 Audience Winners</h2>
-    <div class="note">Contestants whose real score on the show matches the audience average here — they "guessed their latent" against the whole internet.</div>
+    <div class="note">Contestants whose real score on the show matches the audience average here, they "guessed their latent" against the whole internet.</div>
     <div id="audienceWinners"></div>
   </div>
 
   <div class="section">
-    <h2>🔥 Hot or Not — Elo ranking</h2>
+    <h2>🔥 Hot or Not, Elo ranking</h2>
     <div class="note">From face-off votes. Win against a higher-rated rival, climb faster. Click anyone to read their episode story.</div>
     <div class="chips" id="hotFilter">
       <button class="chip on" data-f="all">Everyone</button>
       <button class="chip" data-f="panel">Panel</button>
       <button class="chip" data-f="contestant">Contestants</button>
     </div>
+    <input class="searchBox" id="search" type="search" placeholder="Search a panelist… (name or episode, e.g. 'E11')">
     <div id="hotTable"></div>
   </div>
 
   <div class="section">
-    <h2>🎙️ The Judge's Table — contestant scores</h2>
+    <h2>🎙️ The Judge's Table, contestant scores</h2>
     <div class="note">Average of everyone's out-of-10 scores from <a href="/judge" style="text-decoration:underline">Judge Mode</a>.</div>
     <div id="judgeTable"></div>
   </div>
@@ -45,10 +49,17 @@
 <script src="/app.js"></script>
 <script>
 let data = null;
+let currentFilter = 'all';
 
 function hotRows(filter) {
+  currentFilter = filter;
+  const q = (document.getElementById('search').value || '').trim().toLowerCase();
   let rows = data.hot.filter(p => filter === 'all' || p.type === filter);
   if (!SHOW_CONTESTANTS) rows = rows.filter(p => p.type === 'panel');
+  if (q) rows = rows.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.panels.some(x => x.toLowerCase().includes(q)) ||
+    p.blurb.toLowerCase().includes(q));
   const t = document.createElement('table');
   t.innerHTML = '<tr><th>#</th><th>Who</th><th>Panels</th><th>Elo</th><th>W–L</th></tr>';
   rows.forEach((p, i) => {
@@ -74,7 +85,7 @@ function judgeRows() {
     const tr = document.createElement('tr');
     tr.className = 'rowClick';
     tr.innerHTML = `<td class="rank">${i + 1}</td><td></td>
-      <td><b>${p.avgScore ?? '—'}</b>${p.avgScore !== null ? '/10' : ''}</td>
+      <td><b>${p.avgScore ?? '-'}</b>${p.avgScore !== null ? '/10' : ''}</td>
       <td style="color:var(--muted)">${p.scoreCount}</td>
       <td>${p.showScore !== null ? p.showScore + '/10' : '<span style="color:var(--muted)">unknown</span>'}</td>`;
     tr.children[1].appendChild(miniPerson(p));
@@ -89,18 +100,28 @@ function judgeRows() {
 function audienceWinners() {
   const holder = document.getElementById('audienceWinners');
   if (!data.audienceWinners.length) {
-    holder.innerHTML = '<div class="empty">No matches yet. A contestant appears here when the audience average (rounded) equals the score they actually got on the show. Most show scores are still unknown — fill in <code>showScore</code> in data.js as you rewatch episodes.</div>';
+    holder.innerHTML = '<div class="empty">No matches yet. A contestant appears here when the audience average (rounded) equals the score they actually got on the show. Most show scores are still unknown, fill in <code>showScore</code> in data.js as you rewatch episodes.</div>';
     return;
   }
   holder.innerHTML = data.audienceWinners.map(p => `
     <div class="winnerBanner">
       <div class="who">🏆 ${p.name}</div>
-      <div class="why">Show score ${p.showScore}/10 · audience average ${p.avgScore}/10 (${p.scoreCount} votes) — the internet agrees with the panel.</div>
+      <div class="why">Show score ${p.showScore}/10 · audience average ${p.avgScore}/10 (${p.scoreCount} votes), the internet agrees with the panel.</div>
     </div>`).join('');
+}
+
+function statChips() {
+  const t = data.totals || {};
+  const shown = SHOW_CONTESTANTS ? t.people : data.hot.filter(p => p.type === 'panel').length;
+  document.getElementById('statChips').innerHTML = `
+    <div class="statChip"><b>${shown}</b><span>People ranked</span></div>
+    <div class="statChip"><b>${t.faceoffVotes ?? 0}</b><span>Face-off votes</span></div>
+    <div class="statChip"><b>${t.scoreVotes ?? 0}</b><span>Judge scores</span></div>`;
 }
 
 async function load() {
   data = await API.get('/api/leaderboard');
+  statChips();
   if (!SHOW_CONTESTANTS) {
     document.getElementById('audienceWinnersSection').style.display = 'none';
     document.getElementById('judgeTable').closest('.section').style.display = 'none';
@@ -111,6 +132,7 @@ async function load() {
   audienceWinners();
 }
 
+document.getElementById('search').addEventListener('input', () => hotRows(currentFilter));
 document.getElementById('hotFilter').addEventListener('click', e => {
   const chip = e.target.closest('.chip');
   if (!chip) return;

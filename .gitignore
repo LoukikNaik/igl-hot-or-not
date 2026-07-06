@@ -12,3 +12,5 @@ node_modules/
 
 # local agent config
 .claude/
+backups/
+db.json.bak
