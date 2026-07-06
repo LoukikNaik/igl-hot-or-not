@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Funny or Not, India's Got Latent</title>
 <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('igl_theme') || 'black');</script>
-<meta name="description" content="Vote head-to-head on who's funnier — the panelists of India's Got Latent Seasons 1 & 2. Then see the live leaderboard.">
+<meta name="description" content="Comedy is subjective. We're settling it anyway. Vote on who's funnier across India's Got Latent S1 & S2, then watch the leaderboard argue back.">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -13,14 +13,14 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="India's Got Latent · Funny or Not">
 <meta property="og:title" content="Funny or Not · India's Got Latent">
-<meta property="og:description" content="Vote head-to-head on who's funnier — the panelists of India's Got Latent Seasons 1 & 2. Then see the live leaderboard.">
+<meta property="og:description" content="Comedy is subjective. We're settling it anyway. Vote on who's funnier across India's Got Latent S1 & S2, then watch the leaderboard argue back.">
 <meta property="og:url" content="https://igl.loukik.dev/">
 <meta property="og:image" content="https://igl.loukik.dev/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Funny or Not · India's Got Latent">
-<meta name="twitter:description" content="Vote head-to-head on who's funnier — the panelists of India's Got Latent Seasons 1 & 2. Then see the live leaderboard.">
+<meta name="twitter:description" content="Comedy is subjective. We're settling it anyway. Vote on who's funnier across India's Got Latent S1 & S2, then watch the leaderboard argue back.">
 <meta name="twitter:image" content="https://igl.loukik.dev/og.png">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -35,7 +35,7 @@
 </nav>
 <main>
   <h1>Who's <em>funnier</em>?</h1>
-  <p class="sub">Comedy is subjective, but we can still rank the panelists of India's Got Latent. Swipe, tap, or use ← / → — every vote moves the leaderboard.</p>
+  <p class="sub">Comedy is subjective. We're settling it anyway. Two India's Got Latent panelists walk in, you pick the funnier one — swipe, tap, or ← / →. Democracy, but pettier.</p>
 
   <div class="chips" id="pools">
     <button class="chip on" data-pool="panel">All panelists</button>
@@ -49,7 +49,7 @@
     <div id="slotB"></div>
   </div>
   <div class="toolbar">
-    <button class="btn" id="skip">Skip this matchup →</button>
+    <button class="btn" id="skip">Ugh, too close — skip →</button>
   </div>
   <div class="sessionNote" id="sessionNote"></div>
 </main>
@@ -95,9 +95,9 @@ function bumpSession() {
 function renderSession() {
   const n = parseInt(localStorage.getItem('igl_session_votes') || '0', 10);
   const isTouch = matchMedia('(hover: none)').matches;
-  const hint = isTouch ? 'Swipe or tap a card to vote.' : 'Use \u2190 / \u2192 (or click) to vote.';
+  const hint = isTouch ? 'Swipe the funnier one to glory.' : '\u2190 / \u2192 or click. You are the panel now.';
   document.getElementById('sessionNote').textContent =
-    n ? `You've decided ${n} matchup${n === 1 ? '' : 's'}, every one moves the leaderboard.` : hint;
+    n ? `${n} verdict${n === 1 ? '' : 's'} delivered. Somewhere an Elo rating just flinched.` : hint;
 }
 
 // Tinder-style: the whole arena flings off in the swipe direction, next matchup slides in.

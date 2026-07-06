@@ -35,7 +35,7 @@
 </nav>
 <main>
   <h1>The <em>Leaderboard</em></h1>
-  <p class="sub">Live rankings from everyone's votes, face-off Elo for hotness, judge-mode averages for talent. Click anyone for their full profile.</p>
+  <p class="sub">The internet voted, and the internet has opinions. Live Elo from every face-off — it updates in real time, whether you agree with it or not. Tap anyone for the full dossier.</p>
   <div class="statChips" id="statChips"></div>
 
   <div class="section" id="audienceWinnersSection">
@@ -46,13 +46,13 @@
 
   <div class="section">
     <h2>🔥 Funny or Not, Elo ranking</h2>
-    <div class="note">From face-off votes. Win against a higher-rated rival, climb faster. Click anyone to read their episode story.</div>
+    <div class="note">Chess-grade Elo, applied to comedy. Beat someone ranked above you and you rocket up; lose to an underdog and, well, that one lingers. Tap anyone for their episode story.</div>
     <div class="chips" id="hotFilter">
       <button class="chip on" data-f="all">Everyone</button>
       <button class="chip" data-f="s1">Season 1</button>
       <button class="chip" data-f="s2">Season 2</button>
     </div>
-    <input class="searchBox" id="search" type="search" placeholder="Search a panelist… (name or episode, e.g. 'E11')">
+    <input class="searchBox" id="search" type="search" placeholder="Search a panelist (name or episode, e.g. 'E11')">
     <div id="hotTable"></div>
   </div>
 
@@ -147,10 +147,10 @@ async function load() {
     document.querySelector('main').innerHTML = `
       <div class="lockNotice">
         <div class="lockIcon">🔒</div>
-        <h2>Leaderboard locked</h2>
-        <p>Rankings unlock after you decide ${LEADERBOARD_UNLOCK} face-offs, so every visitor contributes before peeking. You're at <b>${votes}/${LEADERBOARD_UNLOCK}</b>.</p>
+        <h2>No peeking yet</h2>
+        <p>Everyone pays the same entry fee: ${LEADERBOARD_UNLOCK} face-off votes before you get to judge the judges. You're at <b>${votes}/${LEADERBOARD_UNLOCK}</b>. Chop chop.</p>
         <div class="lockBar"><div style="width:${votes * 100 / LEADERBOARD_UNLOCK}%"></div></div>
-        <button class="btn primary" onclick="location.href='index.html'">Go vote 🔥</button>
+        <button class="btn primary" onclick="location.href='index.html'">Fine, I'll vote 🔥</button>
       </div>`;
     return;
   }

@@ -188,7 +188,7 @@ function paintLeaderboardLink(votes) {
       link.innerHTML = `🔒 <span class="navword">Leaderboard </span>${votes}/${LEADERBOARD_UNLOCK}`;
       const left = LEADERBOARD_UNLOCK - votes;
       link.setAttribute('data-tip',
-        `The leaderboard unlocks after you decide ${LEADERBOARD_UNLOCK} face-offs, so every visitor votes before peeking. ${left} to go!`);
+        `Rankings unlock after ${LEADERBOARD_UNLOCK} face-off votes. ${left} to go, no shortcuts, no VIP list.`);
       link.onclick = e => e.preventDefault();
     }
   });
