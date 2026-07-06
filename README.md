@@ -1,4 +1,4 @@
-# India's Got Latent, Hot or Not
+# India's Got Latent, Funny or Not
 
 Public voting app for IGL Season 1 & 2 panel members and contestants. Zero dependencies, just Node 18+.
 
@@ -10,7 +10,7 @@ npm start          # → http://localhost:3000
 
 | URL | What |
 |---|---|
-| `/` | **Face-Off**, two cards, click the hotter one. Elo ranking, one vote per matchup per voter. |
+| `/` | **Face-Off**, two cards, click the funnier one. Elo ranking, one vote per matchup per voter. |
 | `/judge` | **Judge Mode**, score contestants 0–10 like the panel. Reveals the audience average after each score, episode recap at the end. |
 | `/leaderboard` | **Leaderboard**, Elo hotness ranking, contestant score averages, and the Audience Winners section. |
 
