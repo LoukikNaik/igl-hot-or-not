@@ -11,7 +11,7 @@ BIN="/opt/homebrew/bin"
 export PATH="$BIN:/usr/bin:/bin:/usr/sbin:$PATH"
 export ALLOWED_ORIGIN="https://igl.loukik.dev"
 export STATS_KEY="$(cat "$HOME/.config/cloudflare/igl-stats-key" 2>/dev/null || echo devkey)"
-REPO="LoukikNaik/igl-hot-or-not"
+REPO="LoukikNaik/igl-funny-or-not"
 
 cd "$DIR" || exit 1
 LOGS="$DIR/logs"; mkdir -p "$LOGS"
