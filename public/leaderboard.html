@@ -159,7 +159,8 @@ async function load() {
   if (!SHOW_CONTESTANTS) {
     document.getElementById('audienceWinnersSection').style.display = 'none';
     document.getElementById('judgeTable').closest('.section').style.display = 'none';
-    document.querySelector('#hotFilter [data-f="contestant"]').style.display = 'none';
+    const contestantChip = document.querySelector('#hotFilter [data-f="contestant"]');
+    if (contestantChip) contestantChip.style.display = 'none';
   }
   hotRows('all');
   judgeRows();
