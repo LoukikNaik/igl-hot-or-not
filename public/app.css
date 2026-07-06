@@ -60,6 +60,8 @@ nav {
   border-bottom: 1px solid var(--border);
   position: sticky; top: 0; z-index: 10;
 }
+.brandLink { display: flex; align-items: center; gap: 10px; }
+.navlogo { border-radius: 7px; display: block; flex: none; }
 .brand { font-weight: 900; letter-spacing: .4px; font-size: 17px; }
 .brand em { color: var(--accent); font-style: normal; }
 :root[data-theme="white"] .brand em { color: var(--rank-ink); }
