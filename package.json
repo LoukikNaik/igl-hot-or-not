@@ -1,5 +1,5 @@
 {
-  "name": "igl-hot-or-not",
+  "name": "igl-funny-or-not",
   "version": "1.0.0",
   "description": "Funny or Not + Judge Mode for India's Got Latent S1 & S2 — public voting with backend averages",
   "main": "server.js",
