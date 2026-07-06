@@ -19,7 +19,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // API base: '' for same-origin (local dev), or an absolute backend URL (Pages + ngrok).
 const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || '';
-const API_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
+// Durable anonymous voter id in localStorage (works where 3rd-party cookies are blocked, e.g. iOS Safari).
+function voterToken() {
+  let t = localStorage.getItem('igl_voter_token');
+  if (!t || !/^[a-f0-9]{32}$/.test(t)) {
+    const b = new Uint8Array(16); crypto.getRandomValues(b);
+    t = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem('igl_voter_token', t);
+  }
+  return t;
+}
+const API_HEADERS = { 'ngrok-skip-browser-warning': 'true', 'x-igl-voter': voterToken() };
 const API = {
   get: (u) => fetch(API_BASE + u, { credentials: 'include', headers: API_HEADERS }).then(r => r.json()),
   post: (u, body) => fetch(API_BASE + u, {
@@ -170,12 +180,12 @@ function paintLeaderboardLink(votes) {
   document.querySelectorAll('nav .links a[href="leaderboard.html"]').forEach(link => {
     if (votes >= LEADERBOARD_UNLOCK) {
       link.classList.remove('lockedLink');
-      link.textContent = '🏆 Leaderboard';
+      link.innerHTML = '🏆 <span class="navword">Leaderboard</span>';
       link.removeAttribute('data-tip');
       link.onclick = null;
     } else {
       link.classList.add('lockedLink');
-      link.textContent = `🔒 Leaderboard ${votes}/${LEADERBOARD_UNLOCK}`;
+      link.innerHTML = `🔒 <span class="navword">Leaderboard </span>${votes}/${LEADERBOARD_UNLOCK}`;
       const left = LEADERBOARD_UNLOCK - votes;
       link.setAttribute('data-tip',
         `The leaderboard unlocks after you decide ${LEADERBOARD_UNLOCK} face-offs, so every visitor votes before peeking. ${left} to go!`);

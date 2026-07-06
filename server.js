@@ -126,6 +126,13 @@ function getIp(req) {
   return (fwd ? fwd.split(',')[0].trim() : req.socket.remoteAddress) || 'unknown';
 }
 function getVoter(req, res) {
+  // Durable client token (localStorage) sent as a header — survives everywhere,
+  // including iOS Safari which blocks the cross-site cookie. This is the primary id.
+  const token = req.headers['x-igl-voter'];
+  if (token && /^[a-f0-9]{32}$/.test(token)) {
+    return crypto.createHash('sha256').update('t:' + token).digest('hex').slice(0, 24);
+  }
+  // Fallback for same-origin / no-JS: cookie + IP.
   const cookies = Object.fromEntries((req.headers.cookie || '').split(';')
     .map(c => c.trim().split('=')).filter(kv => kv.length === 2));
   let uid = cookies['igl_voter'];
@@ -323,7 +330,7 @@ function applyCors(req, res) {
   if (!ALLOWED_ORIGIN || origin !== ALLOWED_ORIGIN) return;
   res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning, x-igl-voter');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Vary', 'Origin');
 }

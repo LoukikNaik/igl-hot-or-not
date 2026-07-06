@@ -40,6 +40,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { overflow-x: hidden; }
 html { color-scheme: dark; }
 :root[data-theme="white"] { color-scheme: light; }
 body {
@@ -166,6 +167,18 @@ h1 em { color: var(--accent); font-style: normal; }
 
 /* ---------- faceoff ---------- */
 .arena { display: grid; grid-template-columns: 1fr 64px 1fr; gap: 16px; align-items: start; }
+.arena > *, #slotA, #slotB { min-width: 0; }   /* let cards shrink below image min-content */
+.arena { touch-action: pan-y; transition: transform .25s ease; }
+.card.picking {
+  transform: translateY(-3px) scale(1.035);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 50%, transparent), var(--shadow);
+}
+.card.picking::after {
+  content: 'FUNNIER'; position: absolute; top: 8px; right: 8px; z-index: 4;
+  background: var(--accent); color: var(--accent-ink);
+  font-size: 10px; font-weight: 900; letter-spacing: .5px; padding: 3px 8px; border-radius: 999px;
+}
 .vs { text-align: center; font-size: 26px; font-weight: 900; color: var(--accent); align-self: center; }
 :root[data-theme="white"] .vs { color: var(--rank-ink); }
 .toolbar { display: flex; gap: 10px; margin-top: 18px; justify-content: center; align-items: center; }
@@ -279,12 +292,68 @@ tr.rowClick:hover .mini::after { opacity: 1; transform: translateX(0); }
 }
 .modal .mClose:hover { background: var(--accent); color: var(--accent-ink); }
 
+/* ---------- responsive ---------- */
 @media (max-width: 720px) {
-  .arena { grid-template-columns: 1fr; }
-  .vs { padding: 4px 0; }
   .modal { grid-template-columns: 1fr; }
-  .modal .mPhoto { min-height: 300px; }
+  .modal .mPhoto { min-height: 280px; aspect-ratio: 16/10; }
   tr.rowClick .mini::after { display: none; }
+}
+
+/* phones */
+@media (max-width: 560px) {
+  html { -webkit-text-size-adjust: 100%; }
+  nav { padding: 11px 12px; gap: 8px; flex-wrap: nowrap; }
+  .brand { display: none; }                  /* logo carries the brand on phones */
+  .navword { display: none; }                /* links collapse to their emoji + count */
+  .navlogo { width: 30px; height: 30px; }
+  nav .links { gap: 6px; margin-left: auto; flex: none; }
+  nav .links a { padding: 8px 11px; font-size: 14px; white-space: nowrap; }
+  .themeToggle { width: 36px; height: 36px; flex: none; }
+
+  main { padding: 18px 14px 80px; }
+  h1 { font-size: 25px; }
+  .sub { font-size: 14px; }
+
+  /* face-off stays side-by-side and fully fits the screen — no scrolling to compare */
+  .sub { font-size: 13px; margin-bottom: 14px; }
+  .arena { grid-template-columns: 1fr 30px 1fr; gap: 8px; }
+  .vs { font-size: 17px; }
+  .arena .meta { padding: 9px 10px 11px; }
+  .arena .meta .name { font-size: 15px; line-height: 1.2; }
+  .arena .meta .role { margin: 5px 0 0; padding: 2px 7px; font-size: 10px; }
+  /* only the photo, name and role on the tiny cards — full detail is a tap away in the modal */
+  .arena .panelchips, .arena .meta .blurb, .arena .meta .joke, .arena .meta .ig { display: none; }
+  .arena .photo { aspect-ratio: 3/3.4; }
+  .toolbar { flex-wrap: wrap; }
+  button.btn { padding: 11px 18px; }        /* comfortable tap targets */
+  .eloDelta { font-size: 12px; padding: 3px 8px; top: 7px; left: 7px; }
+
+  /* chips + search fill the row */
+  .chips { gap: 6px; margin-bottom: 16px; }
+  .chip { padding: 8px 13px; }               /* >=44px tall tap targets */
+  .searchBox { max-width: none; }
+  .statChips { gap: 8px; }
+  .statChip { flex: 1 1 40%; padding: 10px 12px; }
+  .statChip b { font-size: 16px; }
+
+  /* leaderboard table: drop the wide Panels column, tighten the rest */
+  table { font-size: 13px; }
+  th, td { padding: 10px 9px; }
+  th:nth-child(3), td:nth-child(3) { display: none; }   /* Panels / Audience-avg column */
+  td .mini { gap: 8px; }
+  td .mini img, td .mini .dot { width: 30px; height: 30px; }
+  td.rank { width: 30px; }
+
+  .modal .mBody { padding: 20px 18px; }
+  .modal .mName { font-size: 22px; }
+  .lockNotice { margin: 28px auto; padding: 26px 20px; }
+}
+
+/* very small phones */
+@media (max-width: 360px) {
+  .brand { font-size: 12px; letter-spacing: 0; }
+  nav .links a { padding: 6px 8px; font-size: 12px; }
+  .arena { gap: 6px; grid-template-columns: 1fr 26px 1fr; }
 }
 
 /* ---------- gated leaderboard link ---------- */

@@ -26,10 +26,10 @@
 </head>
 <body>
 <nav>
-  <a class="brandLink" href="index.html"><img class="navlogo" src="icon-512.png" alt="IGL" width="30" height="30"><span class="brand">INDIA'S GOT <em>LATENT</em> · FUNNY OR NOT</span></a>
+  <a class="brandLink" href="index.html"><img class="navlogo" src="icon-512.png" alt="IGL" width="30" height="30"><span class="brand">INDIA'S GOT <em>LATENT</em> <span class="brandSuffix">· FUNNY OR NOT</span></span></a>
   <div class="links">
-    <a href="index.html">🔥 Face-Off</a>
-    <a href="leaderboard.html">🏆 Leaderboard</a>
+    <a href="index.html">🔥 <span class="navword">Face-Off</span></a>
+    <a href="leaderboard.html">🏆 <span class="navword">Leaderboard</span></a>
     <button class="themeToggle" title="Switch theme" aria-label="Switch theme">☀️</button>
   </div>
 </nav>
@@ -86,8 +86,10 @@ function bumpSession() {
 }
 function renderSession() {
   const n = parseInt(localStorage.getItem('igl_session_votes') || '0', 10);
+  const isTouch = matchMedia('(hover: none)').matches;
+  const hint = isTouch ? 'Swipe or tap a card to vote.' : 'Use ← / → to vote from the keyboard.';
   document.getElementById('sessionNote').textContent =
-    n ? `You've decided ${n} matchup${n === 1 ? '' : 's'}, every one moves the leaderboard.` : 'Use ← / → to vote from the keyboard.';
+    n ? `You've decided ${n} matchup${n === 1 ? '' : 's'}, every one moves the leaderboard.` : hint;
 }
 
 async function vote(winner, loser, winCard, loseCard) {
@@ -125,6 +127,46 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') document.getElementById('slotA').firstChild.click();
   if (e.key === 'ArrowRight') document.getElementById('slotB').firstChild.click();
 });
+
+// ---- swipe to vote (phones): drag left = left wins, drag right = right wins ----
+(function setupSwipe() {
+  const arena = document.getElementById('arena');
+  const THRESH = 55;
+  let startX = 0, startY = 0, dx = 0, active = false, horiz = false;
+  const cardA = () => document.getElementById('slotA').firstChild;
+  const cardB = () => document.getElementById('slotB').firstChild;
+  const clearPick = () => { [cardA(), cardB()].forEach(c => c && c.classList.remove('picking')); };
+
+  arena.addEventListener('touchstart', e => {
+    if (voting || !current) return;
+    const t = e.touches[0]; startX = t.clientX; startY = t.clientY; dx = 0; active = true; horiz = false;
+    arena.style.transition = 'none';
+  }, { passive: true });
+
+  arena.addEventListener('touchmove', e => {
+    if (!active) return;
+    const t = e.touches[0]; dx = t.clientX - startX; const dy = t.clientY - startY;
+    if (!horiz && Math.abs(dx) < Math.abs(dy)) { active = false; return; } // it's a vertical scroll
+    horiz = true;
+    e.preventDefault();
+    arena.style.transform = 'translateX(' + (dx * 0.35) + 'px)';
+    const a = cardA(), b = cardB();
+    if (a) a.classList.toggle('picking', dx < -14);
+    if (b) b.classList.toggle('picking', dx > 14);
+  }, { passive: false });
+
+  const end = () => {
+    if (!active) { clearPick(); arena.style.transform = ''; return; }
+    active = false;
+    arena.style.transition = 'transform .25s ease';
+    arena.style.transform = '';
+    clearPick();
+    if (dx <= -THRESH && cardA()) cardA().click();
+    else if (dx >= THRESH && cardB()) cardB().click();
+  };
+  arena.addEventListener('touchend', end);
+  arena.addEventListener('touchcancel', end);
+})();
 
 renderSession();
 loadMatchup();
