@@ -61,3 +61,32 @@ and push each time. Fixes:
   frontend + API at `http://localhost:3000` (same-origin, no CORS needed).
 - SQLite lives at `votes.sqlite` (override with `DB_PATH`); it's snapshotted to
   `backups/` on every boot.
+
+## Keeping the backend running (macOS launchd)
+
+A launchd agent keeps the backend + ngrok alive across terminal close, logout,
+crashes, and reboots. It also auto-updates the deployed frontend whenever ngrok's
+URL changes (sets the `API_BASE` repo variable + redeploys).
+
+- Supervisor script: `scripts/serve.sh` (starts/monitors server + ngrok, repoints
+  the frontend on URL change; logs to `logs/`).
+- Agent: `~/Library/LaunchAgents/dev.loukik.igl.plist`, runs the script under
+  `caffeinate -s`, `KeepAlive` + `RunAtLoad`.
+
+Manage it:
+```bash
+launchctl kickstart -k gui/$(id -u)/dev.loukik.igl   # restart now
+launchctl bootout    gui/$(id -u)/dev.loukik.igl     # stop + disable
+launchctl bootstrap  gui/$(id -u) ~/Library/LaunchAgents/dev.loukik.igl.plist  # (re)load
+tail -f logs/supervisor.log                          # watch it
+```
+
+### Lid-closed caveat (important)
+`caffeinate -s` only holds off sleep **on AC power**. On battery, closing the lid
+sleeps the Mac regardless, and everything pauses until it wakes. To run with the
+lid closed:
+- **Plug into AC power** (then `caffeinate -s` keeps it awake, lid closed), OR
+- For guaranteed lid-closed operation, run once (needs sudo, system setting):
+  `sudo pmset -c disablesleep 1`  (undo with `sudo pmset -c disablesleep 0`).
+When the Mac does sleep, the launchd agent brings everything back on wake, and the
+frontend auto-repoints if ngrok handed out a new URL.

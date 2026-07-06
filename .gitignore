@@ -21,3 +21,4 @@ votes.sqlite-wal
 transcripts/*.part
 transcripts/*.ytdl
 transcripts/*.part-*
+logs/
