@@ -1,0 +1,14 @@
+# votes / user data — regenerated at runtime, not source
+db.json
+
+# temp media from the transcription pipeline
+transcripts/*.m4a
+transcripts/*.mp4
+
+# os / editor noise
+.DS_Store
+*.log
+node_modules/
+
+# local agent config
+.claude/

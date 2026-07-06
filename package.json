@@ -1,0 +1,9 @@
+{
+  "name": "igl-hot-or-not",
+  "version": "1.0.0",
+  "description": "Hot or Not + Judge Mode for India's Got Latent S1 & S2 — public voting with backend averages",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Judge Mode — India's Got Latent</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<nav>
+  <div class="brand">INDIA'S GOT <em>LATENT</em> · HOT OR NOT</div>
+  <div class="links">
+    <a href="/">🔥 Face-Off</a>
+    <a href="/leaderboard">🏆 Leaderboard</a>
+  </div>
+</nav>
+<main>
+  <h1>Judge <em>Mode</em></h1>
+  <p class="sub">Score every contestant out of 10, like the panel does. After each score you'll see the running audience average — and after the last one, your full episode recap.</p>
+
+  <div class="chips" id="pools">
+    <button class="chip on" data-pool="contestant">All contestants</button>
+    <button class="chip" data-pool="s1">Season 1</button>
+    <button class="chip" data-pool="s2">Season 2</button>
+  </div>
+
+  <div class="judgeWrap">
+    <div class="progress" id="progress"></div>
+    <div id="stage"></div>
+  </div>
+</main>
+
+<script src="/app.js"></script>
+<script>
+let queue = [], idx = 0, results = [];
+
+async function start(pool) {
+  const { people } = await API.get('/api/people');
+  queue = people.filter(p => p.type === 'contestant' &&
+    (pool === 'contestant' || p.panels.some(x => x.startsWith(pool.toUpperCase()))));
+  // unscored first, then previously-scored (so you can revise)
+  queue.sort((a, b) => (a.myScore === null ? 0 : 1) - (b.myScore === null ? 0 : 1) || Math.random() - 0.5);
+  idx = 0; results = [];
+  next();
+}
+
+function next() {
+  if (idx >= queue.length) return recap();
+  const p = queue[idx];
+  document.getElementById('progress').textContent = `Contestant ${idx + 1} of ${queue.length}`;
+  const stage = document.getElementById('stage');
+  stage.innerHTML = '';
+  stage.appendChild(personCard(p));
+
+  const row = document.createElement('div');
+  row.className = 'scoreRow';
+  for (let s = 0; s <= 10; s++) {
+    const b = document.createElement('button');
+    b.className = 'scoreBtn' + (p.myScore === s ? ' picked' : '');
+    b.textContent = s;
+    b.onclick = () => submit(p, s, row);
+    row.appendChild(b);
+  }
+  stage.appendChild(row);
+  if (p.myScore !== null) {
+    const note = document.createElement('div');
+    note.className = 'progress';
+    note.textContent = `You previously gave ${p.myScore}/10 — pick again to change it.`;
+    stage.appendChild(note);
+  }
+}
+
+async function submit(p, score, row) {
+  row.querySelectorAll('.scoreBtn').forEach(b => b.disabled = true);
+  const res = await API.post('/api/score', { personId: p.id, score });
+  results.push({ p, mine: score, avg: res.avgScore, count: res.scoreCount });
+
+  const reveal = document.createElement('div');
+  reveal.className = 'reveal';
+  const diff = Math.abs(res.avgScore - score);
+  const matched = Math.round(res.avgScore) === score;
+  reveal.innerHTML = `
+    <div class="big">${res.avgScore}/10</div>
+    <div class="cap">audience average · ${res.scoreCount} vote${res.scoreCount === 1 ? '' : 's'}</div>
+    <div class="match ${matched ? 'yes' : 'no'}">
+      ${matched ? '🎯 You matched the audience!' : `You gave ${score} — off by ${diff.toFixed(1)}`}
+    </div>
+    ${p.showScore !== null ? `<div class="cap" style="margin-top:8px">On the show they scored <b>${p.showScore}/10</b></div>` : ''}
+    <div class="toolbar"><button class="btn primary" id="nextBtn">Next →</button></div>`;
+  document.getElementById('stage').appendChild(reveal);
+  reveal.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  document.getElementById('nextBtn').onclick = () => { idx++; next(); };
+}
+
+function recap() {
+  document.getElementById('progress').textContent = '';
+  const stage = document.getElementById('stage');
+  if (!results.length) {
+    stage.innerHTML = '<div class="empty">No one left to score in this filter — you\'ve judged them all. Check the <a href="/leaderboard" style="text-decoration:underline">leaderboard</a>.</div>';
+    return;
+  }
+  const matches = results.filter(r => Math.round(r.avg) === r.mine).length;
+  stage.innerHTML = `
+    <div class="winnerBanner">
+      <div class="who">📋 Episode recap</div>
+      <div class="why">You matched the audience average on ${matches} of ${results.length} contestants.</div>
+    </div>
+    <table>
+      <tr><th>Contestant</th><th>You</th><th>Audience avg</th><th>Show</th><th></th></tr>
+      ${results.map(r => `
+        <tr>
+          <td>${r.p.name}</td>
+          <td><b>${r.mine}</b></td>
+          <td>${r.avg} <span style="color:var(--muted)">(${r.count})</span></td>
+          <td>${r.p.showScore !== null ? r.p.showScore : '—'}</td>
+          <td>${Math.round(r.avg) === r.mine ? '<span class="badge win">🎯 matched</span>' : '<span class="badge dim">off by ' + Math.abs(r.avg - r.mine).toFixed(1) + '</span>'}</td>
+        </tr>`).join('')}
+    </table>
+    <div class="toolbar">
+      <button class="btn primary" onclick="location.href='/leaderboard'">See leaderboard 🏆</button>
+      <button class="btn" onclick="location.reload()">Judge again</button>
+    </div>`;
+}
+
+document.getElementById('pools').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#pools .chip').forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+  start(chip.dataset.pool);
+});
+
+if (SHOW_CONTESTANTS) {
+  start('contestant');
+} else {
+  document.querySelector('main').innerHTML =
+    '<h1>Judge <em>Mode</em></h1><div class="empty" style="margin-top:18px">Contestant scoring is switched off for now — the panelist face-off is live on the <a href="/" style="text-decoration:underline">home page</a>.</div>';
+}
+</script>
+</body>
+</html>

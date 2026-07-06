@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hot or Not — India's Got Latent</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<nav>
+  <div class="brand">INDIA'S GOT <em>LATENT</em> · HOT OR NOT</div>
+  <div class="links">
+    <a href="/">🔥 Face-Off</a>
+    <a href="/leaderboard">🏆 Leaderboard</a>
+  </div>
+</nav>
+<main>
+  <h1>Who's <em>hotter</em>?</h1>
+  <p class="sub">Click a card (or press ← / →). Every vote moves the Elo ranking on the public leaderboard. One vote per matchup per person.</p>
+
+  <div class="chips" id="pools">
+    <button class="chip on" data-pool="panel">All panelists</button>
+    <button class="chip" data-pool="panel-s1">Season 1</button>
+    <button class="chip" data-pool="panel-s2">Season 2</button>
+  </div>
+
+  <div class="arena" id="arena">
+    <div id="slotA"></div>
+    <div class="vs">VS</div>
+    <div id="slotB"></div>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="skip">Skip this matchup →</button>
+  </div>
+</main>
+
+<script src="/app.js"></script>
+<script>
+let pool = 'panel';
+let current = null;
+let voting = false;
+
+async function loadMatchup() {
+  voting = false;
+  const m = await API.get('/api/matchup?pool=' + pool);
+  if (m.error) return;
+  current = m;
+  render();
+}
+
+function render() {
+  const a = document.getElementById('slotA');
+  const b = document.getElementById('slotB');
+  a.innerHTML = ''; b.innerHTML = '';
+  a.appendChild(personCard(current.a, { clickable: true }));
+  b.appendChild(personCard(current.b, { clickable: true }));
+  a.firstChild.onclick = () => vote(current.a, current.b, a.firstChild, b.firstChild);
+  b.firstChild.onclick = () => vote(current.b, current.a, b.firstChild, a.firstChild);
+}
+
+async function vote(winner, loser, winCard, loseCard) {
+  if (voting) return;
+  voting = true;
+  winCard.classList.add('won');
+  loseCard.classList.add('lost');
+  API.post('/api/faceoff', { winnerId: winner.id, loserId: loser.id });
+  setTimeout(loadMatchup, 550);
+}
+
+document.getElementById('pools').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#pools .chip').forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+  pool = chip.dataset.pool;
+  loadMatchup();
+});
+document.getElementById('skip').onclick = loadMatchup;
+document.addEventListener('keydown', e => {
+  if (!current || voting) return;
+  if (e.key === 'ArrowLeft') document.getElementById('slotA').firstChild.click();
+  if (e.key === 'ArrowRight') document.getElementById('slotB').firstChild.click();
+});
+
+loadMatchup();
+</script>
+</body>
+</html>

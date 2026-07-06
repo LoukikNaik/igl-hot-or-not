@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaderboard — India's Got Latent</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<nav>
+  <div class="brand">INDIA'S GOT <em>LATENT</em> · HOT OR NOT</div>
+  <div class="links">
+    <a href="/">🔥 Face-Off</a>
+    <a href="/leaderboard">🏆 Leaderboard</a>
+  </div>
+</nav>
+<main>
+  <h1>The <em>Leaderboard</em></h1>
+  <p class="sub">Live rankings from everyone's votes — face-off Elo for hotness, judge-mode averages for talent.</p>
+
+  <div class="section" id="audienceWinnersSection">
+    <h2>🎯 Audience Winners</h2>
+    <div class="note">Contestants whose real score on the show matches the audience average here — they "guessed their latent" against the whole internet.</div>
+    <div id="audienceWinners"></div>
+  </div>
+
+  <div class="section">
+    <h2>🔥 Hot or Not — Elo ranking</h2>
+    <div class="note">From face-off votes. Win against a higher-rated rival, climb faster. Click anyone to read their episode story.</div>
+    <div class="chips" id="hotFilter">
+      <button class="chip on" data-f="all">Everyone</button>
+      <button class="chip" data-f="panel">Panel</button>
+      <button class="chip" data-f="contestant">Contestants</button>
+    </div>
+    <div id="hotTable"></div>
+  </div>
+
+  <div class="section">
+    <h2>🎙️ The Judge's Table — contestant scores</h2>
+    <div class="note">Average of everyone's out-of-10 scores from <a href="/judge" style="text-decoration:underline">Judge Mode</a>.</div>
+    <div id="judgeTable"></div>
+  </div>
+</main>
+
+<script src="/app.js"></script>
+<script>
+let data = null;
+
+function hotRows(filter) {
+  let rows = data.hot.filter(p => filter === 'all' || p.type === filter);
+  if (!SHOW_CONTESTANTS) rows = rows.filter(p => p.type === 'panel');
+  const t = document.createElement('table');
+  t.innerHTML = '<tr><th>#</th><th>Who</th><th>Panels</th><th>Elo</th><th>W–L</th></tr>';
+  rows.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'rowClick';
+    tr.innerHTML = `<td class="rank">${i + 1}</td><td></td>
+      <td>${p.panels.map(x => `<span class="badge dim">${x}</span>`).join(' ')}</td>
+      <td><b>${p.elo}</b></td><td style="color:var(--muted)">${p.wins}–${p.losses}</td>`;
+    tr.children[1].appendChild(miniPerson(p));
+    tr.onclick = () => showPersonModal(p);
+    t.appendChild(tr);
+  });
+  const holder = document.getElementById('hotTable');
+  holder.innerHTML = '';
+  holder.appendChild(t);
+}
+
+function judgeRows() {
+  const rows = data.judged;
+  const t = document.createElement('table');
+  t.innerHTML = '<tr><th>#</th><th>Contestant</th><th>Audience avg</th><th>Votes</th><th>Show score</th></tr>';
+  rows.forEach((p, i) => {
+    const tr = document.createElement('tr');
+    tr.className = 'rowClick';
+    tr.innerHTML = `<td class="rank">${i + 1}</td><td></td>
+      <td><b>${p.avgScore ?? '—'}</b>${p.avgScore !== null ? '/10' : ''}</td>
+      <td style="color:var(--muted)">${p.scoreCount}</td>
+      <td>${p.showScore !== null ? p.showScore + '/10' : '<span style="color:var(--muted)">unknown</span>'}</td>`;
+    tr.children[1].appendChild(miniPerson(p));
+    tr.onclick = () => showPersonModal(p);
+    t.appendChild(tr);
+  });
+  const holder = document.getElementById('judgeTable');
+  holder.innerHTML = '';
+  holder.appendChild(t);
+}
+
+function audienceWinners() {
+  const holder = document.getElementById('audienceWinners');
+  if (!data.audienceWinners.length) {
+    holder.innerHTML = '<div class="empty">No matches yet. A contestant appears here when the audience average (rounded) equals the score they actually got on the show. Most show scores are still unknown — fill in <code>showScore</code> in data.js as you rewatch episodes.</div>';
+    return;
+  }
+  holder.innerHTML = data.audienceWinners.map(p => `
+    <div class="winnerBanner">
+      <div class="who">🏆 ${p.name}</div>
+      <div class="why">Show score ${p.showScore}/10 · audience average ${p.avgScore}/10 (${p.scoreCount} votes) — the internet agrees with the panel.</div>
+    </div>`).join('');
+}
+
+async function load() {
+  data = await API.get('/api/leaderboard');
+  if (!SHOW_CONTESTANTS) {
+    document.getElementById('audienceWinnersSection').style.display = 'none';
+    document.getElementById('judgeTable').closest('.section').style.display = 'none';
+    document.querySelector('#hotFilter [data-f="contestant"]').style.display = 'none';
+  }
+  hotRows('all');
+  judgeRows();
+  audienceWinners();
+}
+
+document.getElementById('hotFilter').addEventListener('click', e => {
+  const chip = e.target.closest('.chip');
+  if (!chip) return;
+  document.querySelectorAll('#hotFilter .chip').forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+  hotRows(chip.dataset.f);
+});
+
+load();
+</script>
+</body>
+</html>
