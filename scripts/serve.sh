@@ -54,20 +54,29 @@ repoint_frontend() {
   local last=""; [ -f "$LAST_URL_FILE" ] && last="$(cat "$LAST_URL_FILE")"
   [ "$url" = "$last" ] && return
   log "ngrok url changed -> $url ; updating API_BASE + redeploying"
-  if "$BIN/gh" variable set API_BASE -R "$REPO" --body "$url" >> "$LOGS/supervisor.log" 2>&1; then
-    # wait until the variable actually reflects the new value, else a fast
-    # workflow dispatch can read the stale value and deploy the old URL
-    local i cur
-    for i in 1 2 3 4 5 6; do
-      cur=$("$BIN/gh" api "/repos/$REPO/actions/variables/API_BASE" --jq .value 2>/dev/null)
-      [ "$cur" = "$url" ] && break
-      sleep 3
-    done
-    "$BIN/gh" workflow run deploy-pages.yml -R "$REPO" >> "$LOGS/supervisor.log" 2>&1
-    echo "$url" > "$LAST_URL_FILE"
-  else
-    log "gh variable set failed (auth? network?) - will retry next loop"
-  fi
+  "$BIN/gh" variable set API_BASE -R "$REPO" --body "$url" >> "$LOGS/supervisor.log" 2>&1 \
+    || { log "gh variable set failed - will retry next loop"; return; }
+  # wait until the variable reflects the new value, else a fast dispatch reads the stale one
+  local i cur
+  for i in 1 2 3 4 5 6; do
+    cur=$("$BIN/gh" api "/repos/$REPO/actions/variables/API_BASE" --jq .value 2>/dev/null)
+    [ "$cur" = "$url" ] && break; sleep 3
+  done
+  "$BIN/gh" workflow run deploy-pages.yml -R "$REPO" >> "$LOGS/supervisor.log" 2>&1
+  # verify the deploy actually succeeded (Pages fails intermittently); only then
+  # record the url. On failure we leave last_url stale so the next loop retries.
+  sleep 8
+  local rid concl
+  rid=$("$BIN/gh" run list -R "$REPO" -L 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+  for i in $(seq 1 25); do
+    concl=$("$BIN/gh" run view "$rid" -R "$REPO" --json status,conclusion --jq '.status+"/"+(.conclusion//"")' 2>/dev/null)
+    case "$concl" in
+      completed/success) echo "$url" > "$LAST_URL_FILE"; log "deploy ok -> $url"; return ;;
+      completed/*)       log "deploy $concl; will retry next loop"; return ;;
+    esac
+    sleep 6
+  done
+  log "deploy still pending; will re-check next loop"
 }
 
 log "supervisor started"
