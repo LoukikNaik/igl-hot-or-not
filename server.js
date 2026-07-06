@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'votes.sqlite');
 const PUBLIC = path.join(__dirname, 'public');
 const PEOPLE_BY_ID = new Map(PEOPLE.map(p => [p.id, p]));
+const VISIBLE = PEOPLE.filter(p => !p.hidden);  // hidden people keep their data/votes but are excluded from the app
 
 // ---------- persistence (SQLite) ----------
 // safety: snapshot the DB on every boot so votes survive accidents
@@ -235,12 +236,12 @@ function api(req, res, url, body) {
   }
 
   if (req.method === 'GET' && url.pathname === '/api/people') {
-    return send(200, { voterId, people: PEOPLE.map(p => personOut(p, voterId)) });
+    return send(200, { voterId, people: VISIBLE.map(p => personOut(p, voterId)) });
   }
 
   if (req.method === 'GET' && url.pathname === '/api/matchup') {
     const pool = url.searchParams.get('pool') || 'all';
-    const cands = PEOPLE.filter(p => inPool(p, pool));
+    const cands = VISIBLE.filter(p => inPool(p, pool));
     if (cands.length < 2) return send(400, { error: 'pool too small' });
     const seen = new Set(q.voterPairs.all(voterId).map(r => r.pair_key));
     const shuffle = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
@@ -271,6 +272,8 @@ function api(req, res, url, body) {
       return send(400, { error: 'bad ids' });
     if (PEOPLE_BY_ID.get(winnerId).type !== PEOPLE_BY_ID.get(loserId).type)
       return send(400, { error: 'contestants and panelists never face off' });
+    if (PEOPLE_BY_ID.get(winnerId).hidden || PEOPLE_BY_ID.get(loserId).hidden)
+      return send(400, { error: 'person not available' });
     const key = pairKey(voterId, winnerId, loserId);
     if (q.faceoffExists.get(key)) return send(200, { ok: true, duplicate: true });
     const deltas = applyFaceoff(winnerId, loserId, voterId, key);
@@ -280,7 +283,7 @@ function api(req, res, url, body) {
   if (req.method === 'POST' && url.pathname === '/api/score') {
     const { personId } = body || {};
     const score = Number(body && body.score);
-    if (!PEOPLE_BY_ID.has(personId)) return send(400, { error: 'bad id' });
+    if (!PEOPLE_BY_ID.has(personId) || PEOPLE_BY_ID.get(personId).hidden) return send(400, { error: 'bad id' });
     if (!Number.isInteger(score) || score < 0 || score > 10)
       return send(400, { error: 'score must be an integer 0-10' });
     q.upsertRating.run(personId, voterId, score);
@@ -289,7 +292,7 @@ function api(req, res, url, body) {
   }
 
   if (req.method === 'GET' && url.pathname === '/api/leaderboard') {
-    const people = PEOPLE.map(p => personOut(p, voterId));
+    const people = VISIBLE.map(p => personOut(p, voterId));
     const hot = [...people].sort((x, y) => y.elo - x.elo);
     const judged = people.filter(p => p.type === 'contestant')
       .sort((x, y) => (y.avgScore ?? -1) - (x.avgScore ?? -1));
@@ -299,7 +302,7 @@ function api(req, res, url, body) {
     const totals = {
       faceoffVotes: q.totalFaceoffs.get().n,
       scoreVotes: q.totalRatings.get().n,
-      people: PEOPLE.length,
+      people: VISIBLE.length,
     };
     return send(200, { hot, judged, audienceWinners, totals });
   }

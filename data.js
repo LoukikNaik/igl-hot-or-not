@@ -165,6 +165,7 @@ module.exports = [
     blurb: 'Stand-up comedian (EIC). Bonus E5 panel with Rohan Joshi, Vaibhav Sethia and Chandni Anand Ghai.',
     wiki: 'Sahil Shah', insta: 'sahilbulla' },
   { id: 'vaibhav-sethia', name: 'Vaibhav Sethia', type: 'panel', panels: ['S1 Bonus E5'],
+    hidden: true, // was not actually on the show — kept for data/votes but excluded from the app
     blurb: 'Stand-up comedian. Bonus E5 panel with Rohan Joshi, Sahil Shah and Chandni Anand Ghai.' },
   { id: 'chandni-bhabhda', name: 'Chandni Anand Ghai', type: 'panel', panels: ['S1 Bonus E5'],
     blurb: 'Balraj\'s wife and The Habitat co-force. Bonus E5 panel with Rohan Joshi, Sahil Shah and Vaibhav Sethia.', insta: 'chandni_a' },
