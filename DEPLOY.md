@@ -17,7 +17,7 @@ ngrok. The Pages frontend calls the ngrok URL for all `/api/*` requests.
    - Tick **Enforce HTTPS** once the cert provisions (a few minutes).
    - DNS check: `dig +short igl.loukik.dev CNAME` should show `loukiknaik.github.io`.
 
-2. **Backend env vars** (so cross-origin cookies + CORS work):
+3. **Backend env vars** (so cross-origin cookies + CORS work):
    ```bash
    export ALLOWED_ORIGIN="https://igl.loukik.dev"   # your Pages origin, no trailing slash, no path
    export STATS_KEY="pick-a-secret"                            # protects /stats and /api/stats
