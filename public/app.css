@@ -336,13 +336,23 @@ tr.rowClick:hover .mini::after { opacity: 1; transform: translateX(0); }
   .statChip { flex: 1 1 40%; padding: 10px 12px; }
   .statChip b { font-size: 16px; }
 
-  /* leaderboard table: drop the wide Panels column, tighten the rest */
-  table { font-size: 13px; }
-  th, td { padding: 10px 9px; }
-  th:nth-child(3), td:nth-child(3) { display: none; }   /* Panels / Audience-avg column */
-  td .mini { gap: 8px; }
-  td .mini img, td .mini .dot { width: 30px; height: 30px; }
-  td.rank { width: 30px; }
+  /* leaderboard: turn rows into flex rows on phones so nothing overflows */
+  table { display: block; font-size: 15px; box-shadow: none; background: transparent; }
+  table tbody { display: block; }
+  table tr:not(.rowClick) { display: none; }             /* hide the header row */
+  tr.rowClick {
+    display: flex; align-items: center; gap: 11px;
+    padding: 11px 13px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  tr.rowClick:first-of-type { border-radius: var(--radius) var(--radius) 0 0; }
+  tr.rowClick:last-child { border-radius: 0 0 var(--radius) var(--radius); border-bottom: none; }
+  td { display: block; padding: 0; border: none; }
+  td.rank { width: 22px; flex: none; }
+  td:nth-child(2) { flex: 1; min-width: 0; }              /* WHO takes the space */
+  td:nth-child(2) .mini > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td:nth-child(3), td:nth-child(5) { display: none; }     /* Panels + W-L (both in the profile modal) */
+  td:nth-child(4) { flex: none; font-weight: 900; color: var(--rank-ink); font-size: 15px; }
+  td .mini img, td .mini .dot { width: 34px; height: 34px; }
 
   .modal .mBody { padding: 20px 18px; }
   .modal .mName { font-size: 22px; }
