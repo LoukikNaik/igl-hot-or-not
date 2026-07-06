@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Judge Mode, India's Got Latent</title>
 <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('igl_theme') || 'black');</script>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 <nav>
   <div class="brand">INDIA'S GOT <em>LATENT</em> · FUNNY OR NOT</div>
   <div class="links">
-    <a href="/">🔥 Face-Off</a>
-    <a href="/leaderboard">🏆 Leaderboard</a>
+    <a href="index.html">🔥 Face-Off</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
     <button class="themeToggle" title="Switch theme" aria-label="Switch theme">☀️</button>
   </div>
 </nav>
@@ -32,7 +32,8 @@
   </div>
 </main>
 
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>document.addEventListener('DOMContentLoaded', () => track('judge_view'));</script>
 <script>
 let queue = [], idx = 0, results = [];
@@ -99,7 +100,7 @@ function recap() {
   document.getElementById('progress').textContent = '';
   const stage = document.getElementById('stage');
   if (!results.length) {
-    stage.innerHTML = '<div class="empty">No one left to score in this filter, you\'ve judged them all. Check the <a href="/leaderboard" style="text-decoration:underline">leaderboard</a>.</div>';
+    stage.innerHTML = '<div class="empty">No one left to score in this filter, you\'ve judged them all. Check the <a href="leaderboard.html" style="text-decoration:underline">leaderboard</a>.</div>';
     return;
   }
   const matches = results.filter(r => Math.round(r.avg) === r.mine).length;
@@ -120,7 +121,7 @@ function recap() {
         </tr>`).join('')}
     </table>
     <div class="toolbar">
-      <button class="btn primary" onclick="location.href='/leaderboard'">See leaderboard 🏆</button>
+      <button class="btn primary" onclick="location.href='leaderboard.html'">See leaderboard 🏆</button>
       <button class="btn" onclick="location.reload()">Judge again</button>
     </div>`;
 }
@@ -137,7 +138,7 @@ if (SHOW_CONTESTANTS) {
   start('contestant');
 } else {
   document.querySelector('main').innerHTML =
-    '<h1>Judge <em>Mode</em></h1><div class="empty" style="margin-top:18px">Contestant scoring is switched off for now, the panelist face-off is live on the <a href="/" style="text-decoration:underline">home page</a>.</div>';
+    '<h1>Judge <em>Mode</em></h1><div class="empty" style="margin-top:18px">Contestant scoring is switched off for now, the panelist face-off is live on the <a href="index.html" style="text-decoration:underline">home page</a>.</div>';
 }
 </script>
 </body>

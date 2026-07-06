@@ -131,8 +131,10 @@ function getVoter(req, res) {
   let uid = cookies['igl_voter'];
   if (!uid || !/^[a-f0-9]{32}$/.test(uid)) {
     uid = crypto.randomBytes(16).toString('hex');
+    const crossSite = !!process.env.ALLOWED_ORIGIN;
+    const flags = crossSite ? 'SameSite=None; Secure; ' : 'SameSite=Lax; ';
     res.setHeader('Set-Cookie',
-      `igl_voter=${uid}; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly`);
+      `igl_voter=${uid}; Path=/; Max-Age=31536000; ${flags}HttpOnly`);
   }
   return crypto.createHash('sha256').update(getIp(req) + '|' + uid).digest('hex').slice(0, 24);
 }
@@ -315,8 +317,21 @@ function serveStatic(req, res, url) {
   });
 }
 
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // e.g. https://loukiknaik.github.io
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (!ALLOWED_ORIGIN || origin !== ALLOWED_ORIGIN) return;
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, ngrok-skip-browser-warning');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Vary', 'Origin');
+}
+
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
+  applyCors(req, res);
+  if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
   if (url.pathname.startsWith('/api/')) {
     if (req.method === 'POST') {
       let raw = '';

@@ -17,10 +17,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Shared helpers: API, photos, card rendering.
 
+// API base: '' for same-origin (local dev), or an absolute backend URL (Pages + ngrok).
+const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || '';
+const API_HEADERS = { 'ngrok-skip-browser-warning': 'true' };
 const API = {
-  get: (u) => fetch(u).then(r => r.json()),
-  post: (u, body) => fetch(u, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  get: (u) => fetch(API_BASE + u, { credentials: 'include', headers: API_HEADERS }).then(r => r.json()),
+  post: (u, body) => fetch(API_BASE + u, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...API_HEADERS }, body: JSON.stringify(body),
   }).then(r => r.json()),
 };
 
@@ -40,7 +44,7 @@ function initials(name) {
 //   3. Styled fallback tile: initials + name + what they did in the episode
 const photoCache = {};
 async function resolvePhoto(p) {
-  if (p.photo) return p.photo;               // server-verified local photo
+  if (p.photo) return p.photo.replace(/^\//, '');   // relative so it works under a Pages subpath
   if (!p.wiki) return null;
   if (p.id in photoCache) return photoCache[p.id];
   const ls = localStorage.getItem('igl_wiki_' + p.id);
@@ -115,9 +119,10 @@ function miniPerson(p) {
 }
 
 function markActiveNav() {
-  const here = location.pathname === '/' ? '/' : location.pathname.replace(/\/$/, '');
+  const here = (location.pathname.split('/').pop() || 'index.html');
   document.querySelectorAll('nav .links a').forEach(a => {
-    if (a.getAttribute('href') === here) a.classList.add('active');
+    const href = a.getAttribute('href');
+    if (href === here || (here === 'index.html' && href === 'index.html')) a.classList.add('active');
   });
 }
 document.addEventListener('DOMContentLoaded', markActiveNav);
@@ -162,7 +167,7 @@ async function myVotes() {
   try { return (await API.get('/api/me')).myVotes || 0; } catch { return 0; }
 }
 function paintLeaderboardLink(votes) {
-  document.querySelectorAll('nav .links a[href="/leaderboard"]').forEach(link => {
+  document.querySelectorAll('nav .links a[href="leaderboard.html"]').forEach(link => {
     if (votes >= LEADERBOARD_UNLOCK) {
       link.classList.remove('lockedLink');
       link.textContent = '🏆 Leaderboard';
@@ -186,8 +191,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 function track(event) {
   try {
     const body = JSON.stringify({ event });
-    if (navigator.sendBeacon) navigator.sendBeacon('/api/event', new Blob([body], { type: 'application/json' }));
-    else fetch('/api/event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true });
+    if (!API_BASE && navigator.sendBeacon) {
+      navigator.sendBeacon('/api/event', new Blob([body], { type: 'application/json' }));
+    } else {
+      fetch(API_BASE + '/api/event', { method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...API_HEADERS }, body, keepalive: true }).catch(() => {});
+    }
   } catch {}
 }
 document.addEventListener('DOMContentLoaded', () => track('visit'));

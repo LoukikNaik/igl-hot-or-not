@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Analytics — India's Got Latent</title>
 <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('igl_theme') || 'black');</script>
-<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="app.css">
 <style>
   .bigStats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 32px; }
   .bigStat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; box-shadow: var(--shadow-soft); }
@@ -20,8 +20,8 @@
 <nav>
   <div class="brand">INDIA'S GOT <em>LATENT</em> · ANALYTICS</div>
   <div class="links">
-    <a href="/">🔥 Face-Off</a>
-    <a href="/leaderboard">🏆 Leaderboard</a>
+    <a href="index.html">🔥 Face-Off</a>
+    <a href="leaderboard.html">🏆 Leaderboard</a>
     <button class="themeToggle" title="Switch theme" aria-label="Switch theme">☀️</button>
   </div>
 </nav>
@@ -30,7 +30,8 @@
   <p class="sub">Anonymous, first-party engagement funnel. All counts are distinct voters (IP + cookie), no third-party trackers.</p>
   <div id="dash"><div class="empty">Loading…</div></div>
 </main>
-<script src="/app.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 <script>
 async function load() {
   const key = new URLSearchParams(location.search).get('key');
