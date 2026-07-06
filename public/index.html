@@ -109,7 +109,13 @@ async function commitVote(dir) {              // dir: -1 = left wins, +1 = right
 
   API.post('/api/faceoff', { winnerId: winner.id, loserId: loser.id }).then(res => {
     bumpSession();
-    if (res && res.myVotes !== undefined) paintLeaderboardLink(res.myVotes);
+    if (res && res.myVotes !== undefined) {
+      paintLeaderboardLink(res.myVotes);
+      if (res.myVotes === LEADERBOARD_UNLOCK && !localStorage.getItem('igl_unlock_shown')) {
+        localStorage.setItem('igl_unlock_shown', '1');
+        setTimeout(showUnlockModal, 500);   // let the fling settle first
+      }
+    }
   });
 
   arena.style.transition = 'transform .34s cubic-bezier(.55,.06,.68,.19), opacity .34s ease-in';

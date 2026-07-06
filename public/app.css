@@ -398,3 +398,16 @@ nav .links a.lockedLink:hover::before { opacity: 1; transform: translateY(0); }
 .lockNotice p { color: var(--muted); font-size: 14px; line-height: 1.6; margin-bottom: 18px; }
 .lockBar { height: 10px; background: var(--surface2); border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
 .lockBar > div { height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s; }
+
+/* ---------- leaderboard unlock celebration ---------- */
+.unlockCard {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 34px 30px; max-width: 380px; width: 100%; text-align: center;
+  box-shadow: var(--shadow); animation: modalIn .2s ease-out;
+}
+.unlockEmoji { font-size: 56px; line-height: 1; margin-bottom: 10px; display: inline-block; animation: pop .35s ease-out; }
+.unlockCard h2 { font-size: 24px; font-weight: 900; margin-bottom: 8px; }
+.unlockCard h2 { color: var(--rank-ink); }
+.unlockCard p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 22px; }
+.unlockBtns { display: flex; flex-direction: column; gap: 10px; }
+.unlockBtns .btn { width: 100%; }

@@ -210,3 +210,25 @@ function track(event) {
   } catch {}
 }
 document.addEventListener('DOMContentLoaded', () => track('visit'));
+
+// ---- leaderboard-unlock celebration (fired from the face-off page on the 10th vote) ----
+function showUnlockModal() {
+  const ov = document.createElement('div');
+  ov.className = 'modalOverlay';
+  ov.innerHTML = `
+    <div class="unlockCard">
+      <div class="unlockEmoji">🏆</div>
+      <h2>Leaderboard unlocked!</h2>
+      <p>You've judged 10 matchups. Go see how the internet ranks everyone, and where your picks landed.</p>
+      <div class="unlockBtns">
+        <button class="btn primary" id="uGo">See the leaderboard →</button>
+        <button class="btn" id="uStay">Keep voting</button>
+      </div>
+    </div>`;
+  const close = () => ov.remove();
+  document.body.appendChild(ov);
+  ov.querySelector('#uGo').onclick = () => { location.href = 'leaderboard.html'; };
+  ov.querySelector('#uStay').onclick = close;
+  ov.addEventListener('click', e => { if (e.target === ov) close(); });
+  document.addEventListener('keydown', function esc(e){ if (e.key === 'Escape'){ close(); document.removeEventListener('keydown', esc);} });
+}
