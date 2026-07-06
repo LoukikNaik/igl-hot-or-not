@@ -55,10 +55,18 @@ repoint_frontend() {
   [ "$url" = "$last" ] && return
   log "ngrok url changed -> $url ; updating API_BASE + redeploying"
   if "$BIN/gh" variable set API_BASE -R "$REPO" --body "$url" >> "$LOGS/supervisor.log" 2>&1; then
+    # wait until the variable actually reflects the new value, else a fast
+    # workflow dispatch can read the stale value and deploy the old URL
+    local i cur
+    for i in 1 2 3 4 5 6; do
+      cur=$("$BIN/gh" api "/repos/$REPO/actions/variables/API_BASE" --jq .value 2>/dev/null)
+      [ "$cur" = "$url" ] && break
+      sleep 3
+    done
     "$BIN/gh" workflow run deploy-pages.yml -R "$REPO" >> "$LOGS/supervisor.log" 2>&1
     echo "$url" > "$LAST_URL_FILE"
   else
-    log "gh variable set failed (auth? network?) — will retry next loop"
+    log "gh variable set failed (auth? network?) - will retry next loop"
   fi
 }
 
