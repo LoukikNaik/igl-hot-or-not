@@ -191,7 +191,7 @@ function personOut(p, voterId) {
   return {
     id: p.id, name: p.name, type: p.type, panels: p.panels, blurb: p.blurb,
     photo: fs.existsSync(path.join(PUBLIC, 'photos', p.id + '.jpg')) ? `/photos/${p.id}.jpg` : null,
-    wiki: p.wiki || null, insta: p.insta || null, joke: p.joke || null,
+    wiki: p.wiki || null, insta: p.insta || null, joke: p.joke || null, jokeBy: p.jokeBy || null,
     showScore: p.showScore ?? null,
     elo: Math.round(pl.rating), wins: pl.wins, losses: pl.losses,
     avgScore: rs.count ? Math.round(rs.avg * 100) / 100 : null,

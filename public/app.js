@@ -105,7 +105,7 @@ function personCard(p, { clickable = false } = {}) {
     <span class="role ${p.type}">${p.type === 'panel' ? 'Panel' : 'Contestant'}</span>
     <div class="panelchips">${p.panels.map(x => `<span>${x}</span>`).join('')}</div>
     <div class="blurb">${p.blurb}</div>
-    ${p.joke ? `<div class="joke">“${p.joke}”</div>` : ''}
+    ${p.joke ? `<div class="joke">“${p.joke}”${p.jokeBy ? `<span class="jokeBy">— ${p.jokeBy}</span>` : ''}</div>` : ''}
     ${p.insta ? `<a class="ig" href="https://instagram.com/${p.insta}" target="_blank" rel="noopener" onclick="event.stopPropagation()">@${p.insta}</a>` : ''}`;
   card.appendChild(meta);
   return card;
@@ -158,7 +158,7 @@ function showPersonModal(p) {
         ${p.showScore !== null && p.showScore !== undefined ? `<div class="mStat"><b>${p.showScore}/10</b><span>Show score</span></div>` : ''}
       </div>
       <div class="mBlurb">${p.blurb}</div>
-      ${p.joke ? `<div class="joke" style="margin-top:14px">“${p.joke}”</div>` : ''}
+      ${p.joke ? `<div class="joke" style="margin-top:14px">“${p.joke}”${p.jokeBy ? `<span class="jokeBy">— ${p.jokeBy}</span>` : ''}</div>` : ''}
       ${p.insta ? `<a class="ig" href="https://instagram.com/${p.insta}" target="_blank" rel="noopener">@${p.insta}</a>` : ''}
     </div>`;
   modal.querySelector('.mPhoto').appendChild(photoEl(p));

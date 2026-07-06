@@ -152,6 +152,8 @@ h1 em { color: var(--accent); font-style: normal; }
   border: 1px solid var(--border); padding: 2px 8px; border-radius: 6px;
 }
 .meta .blurb { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.joke .jokeBy { display: block; margin-top: 5px; font-style: normal; font-weight: 700;
+  font-size: 11px; color: var(--muted); letter-spacing: .2px; }
 .meta .joke {
   margin-top: 8px; padding: 8px 12px; border-left: 3px solid var(--accent);
   background: var(--joke-bg); border-radius: 0 8px 8px 0;

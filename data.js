@@ -35,6 +35,8 @@ module.exports = [
     joke: 'Bhai aapko latent nahi, latex ki zaroorat thi' },
   { id: 'karan-singh-magic', name: 'Karan Singh Magic', type: 'panel', panels: ['S1 E2'],
     blurb: 'Magician. E2 panel with Anshu Bisht and Nishant Tanwar, volunteered for a mind-reading act and prematurely blurted his chosen date.',
+    joke: 'Recently he did a very big trick where he disappeared from the YouTube algorithm',
+    jokeBy: 'Samay, introducing him',
     wiki: 'Karan Singh Magic', insta: 'karansinghmagic' },
   { id: 'aashish-solanki', name: 'Aashish Solanki', type: 'panel', panels: ['S1 E3', 'S1 E12', 'S2 E1'],
     blurb: 'Stand-up comedian (Pretty Good Roast Show). Three panels: E3 with Uorfi Javed and Yashraj, the E12 finale with Rakhi Sawant, Maheep Singh and Yashraj, and the S2 premiere with Alia Bhatt and Sharvari.',
