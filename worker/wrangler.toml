@@ -1,0 +1,20 @@
+name = "igl-api"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# Serve the API at api.loukik.dev (wrangler provisions the DNS + cert since
+# loukik.dev is on this Cloudflare account).
+routes = [
+  { pattern = "api.loukik.dev", custom_domain = true }
+]
+
+[vars]
+ALLOWED_ORIGIN = "https://igl.loukik.dev"
+# STATS_KEY is set as a secret (wrangler secret put STATS_KEY)
+BLOCKED_IPS = "101.0.63.11"
+
+# D1 database (id filled in after `wrangler d1 create igl-votes`)
+[[d1_databases]]
+binding = "DB"
+database_name = "igl-votes"
+database_id = "PLACEHOLDER_DB_ID"

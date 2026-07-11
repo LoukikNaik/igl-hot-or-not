@@ -23,3 +23,6 @@ transcripts/*.ytdl
 transcripts/*.part-*
 logs/
 blocked-ips.txt
+worker/migrate-data.sql
+worker/.wrangler/
+worker/node_modules/
