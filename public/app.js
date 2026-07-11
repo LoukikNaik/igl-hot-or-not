@@ -39,9 +39,9 @@ const API = {
 };
 
 // ---- Turnstile proof-of-human -> signed session (attached to votes) ----
-// Solve Turnstile once (invisible/managed), exchange it for a short-lived signed
-// session from the Worker, then carry that session on every vote. A scripted
-// outsider has no valid session and (once ENFORCE_SESSION is on) can't vote.
+// A BLOCKING gate: a modal covers the page until the user passes Turnstile once; we
+// exchange it for a short-lived signed session from the Worker, then carry that session
+// on every vote. The session secret never leaves the Worker, so it can't be forged.
 const TURNSTILE_SITEKEY = '0x4AAAAAADz7iDpkaXrOP7NA';
 let _tsWidget = null, _tsResolver = null;
 function _whenTurnstile() {
@@ -54,17 +54,30 @@ function _whenTurnstile() {
     }, 100);
   });
 }
-function _tsSettle(token) {
-  const box = document.getElementById('tsBox'); if (box) box.style.display = 'none';
-  const r = _tsResolver; _tsResolver = null; if (r) r(token);
+function _openGate() {
+  if (document.getElementById('verifyGate')) return;
+  _tsWidget = null;
+  const ov = document.createElement('div');
+  ov.id = 'verifyGate';
+  ov.className = 'modalOverlay';
+  ov.innerHTML = `
+    <div class="verifyCard">
+      <div class="verifyEmoji">🎭</div>
+      <h2>Quick human check</h2>
+      <p>Confirm you're a real person to start voting. No account needed, it just keeps the rankings honest.</p>
+      <div id="tsBox"></div>
+      <div class="verifyErr" id="verifyErr" hidden>Couldn't verify. Check your connection and try again.</div>
+      <button class="btn primary verifyRetry" id="verifyRetry" hidden>Try again</button>
+    </div>`;
+  document.body.appendChild(ov);
 }
-async function freshTurnstileToken() {
+function _closeGate() { const ov = document.getElementById('verifyGate'); if (ov) ov.remove(); _tsWidget = null; }
+function _tsSettle(token) { const r = _tsResolver; _tsResolver = null; if (r) r(token); }
+async function _renderTurnstile() {
   await _whenTurnstile();
-  const box = document.getElementById('tsBox'); if (!box) throw new Error('no widget container');
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { _tsResolver = null; box.style.display = 'none'; reject(new Error('turnstile timeout')); }, 25000);
+    const timer = setTimeout(() => { _tsResolver = null; reject(new Error('turnstile timeout')); }, 25000);
     _tsResolver = (t) => { clearTimeout(timer); resolve(t); };
-    box.style.display = 'block';
     try {
       if (_tsWidget === null) {
         _tsWidget = window.turnstile.render('#tsBox', {
@@ -77,6 +90,14 @@ async function freshTurnstileToken() {
     } catch (e) { clearTimeout(timer); reject(e); }
   });
 }
+function _waitRetryClick() {
+  return new Promise((resolve) => {
+    const err = document.getElementById('verifyErr'), btn = document.getElementById('verifyRetry');
+    if (err) err.hidden = false;
+    if (btn) { btn.hidden = false; btn.onclick = () => { if (err) err.hidden = true; btn.hidden = true; resolve(); }; }
+    else resolve();
+  });
+}
 let _session = localStorage.getItem('igl_session') || null;
 let _sessionExp = +(localStorage.getItem('igl_session_exp') || 0);
 let _sessionInflight = null;
@@ -84,13 +105,21 @@ async function ensureSession() {
   if (_session && Date.now() < _sessionExp - 60000) return _session;   // still fresh (>1 min left)
   if (_sessionInflight) return _sessionInflight;
   _sessionInflight = (async () => {
-    const token = await freshTurnstileToken();
-    const res = await API.post('/api/session', { token });
-    if (!res || !res.session) throw new Error('session mint failed');
-    _session = res.session; _sessionExp = res.exp * 1000;
-    localStorage.setItem('igl_session', _session);
-    localStorage.setItem('igl_session_exp', String(_sessionExp));
-    return _session;
+    _openGate();                                  // block the page until verified
+    for (;;) {
+      try {
+        const token = await _renderTurnstile();
+        const res = await API.post('/api/session', { token });
+        if (!res || !res.session) throw new Error('session mint failed');
+        _session = res.session; _sessionExp = res.exp * 1000;
+        localStorage.setItem('igl_session', _session);
+        localStorage.setItem('igl_session_exp', String(_sessionExp));
+        _closeGate();
+        return _session;
+      } catch (e) {
+        await _waitRetryClick();                   // show a retry button, wait, then loop
+      }
+    }
   })();
   try { return await _sessionInflight; } finally { _sessionInflight = null; }
 }

@@ -193,9 +193,18 @@ button.btn:hover { border-color: var(--accent); }
 button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 button.btn:disabled { opacity: .4; cursor: default; }
 .sessionNote { text-align: center; color: var(--muted); font-size: 13px; margin-top: 14px; }
-/* Turnstile widget: hidden until a proof-of-human check is actually needed */
-.tsBox { display: none; margin: 16px auto 0; text-align: center; }
-.tsBox > * { margin: 0 auto; }
+/* proof-of-human gate: a blocking modal that hosts the Turnstile widget */
+.verifyCard {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+  padding: 32px 28px; max-width: 380px; width: 100%; text-align: center;
+  box-shadow: var(--shadow); animation: modalIn .2s ease-out;
+}
+.verifyCard .verifyEmoji { font-size: 48px; line-height: 1; margin-bottom: 10px; }
+.verifyCard h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: var(--rank-ink); }
+.verifyCard p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 20px; }
+.verifyCard #tsBox { display: flex; justify-content: center; min-height: 65px; }
+.verifyErr { color: var(--accent2); font-size: 13px; margin: 12px 0 0; }
+.verifyRetry { width: 100%; margin-top: 12px; }
 .eloDelta {
   position: absolute; top: 10px; left: 10px; z-index: 3;
   background: var(--green); color: #08240f; font-weight: 900; font-size: 14px;
