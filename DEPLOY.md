@@ -1,92 +1,91 @@
-# Deploy: frontend on GitHub Pages (igl.loukik.dev), backend local via ngrok
+# Deploy
 
-The frontend is static (`public/`) and goes to GitHub Pages. The backend
-(`server.js` + SQLite) runs on your machine and is exposed to the internet with
-ngrok. The Pages frontend calls the ngrok URL for all `/api/*` requests.
+Everything runs on **Cloudflare**, always-on and free. No laptop, no ngrok.
 
-## One-time setup
-
-1. **Enable Pages via Actions**: repo Settings → Pages → Source = **GitHub Actions**.
-   (Publishing Pages from a *private* repo needs a paid plan — Pro/Team. On the
-   free tier, make the repo public or host the frontend elsewhere.)
-
-2. **Custom domain `igl.loukik.dev`** (already wired via `public/CNAME`):
-   - At your DNS provider for `loukik.dev`, add a **CNAME** record:
-     `igl`  →  `loukiknaik.github.io`   (proxy/orange-cloud OFF if using Cloudflare)
-   - Repo Settings → Pages → Custom domain → enter `igl.loukik.dev`, Save.
-   - Tick **Enforce HTTPS** once the cert provisions (a few minutes).
-   - DNS check: `dig +short igl.loukik.dev CNAME` should show `loukiknaik.github.io`.
-
-3. **Backend env vars** (so cross-origin cookies + CORS work):
-   ```bash
-   export ALLOWED_ORIGIN="https://igl.loukik.dev"   # your Pages origin, no trailing slash, no path
-   export STATS_KEY="pick-a-secret"                            # protects /stats and /api/stats
-   ```
-
-## Every session
-
-1. **Start the backend:**
-   ```bash
-   ALLOWED_ORIGIN="https://igl.loukik.dev" STATS_KEY="..." npm start
-   ```
-2. **Expose it with ngrok:**
-   ```bash
-   ngrok http 3000
-   ```
-   Copy the `https://….ngrok-free.app` URL it prints.
-3. **Point the frontend at it:** edit `public/config.js`:
-   ```js
-   window.API_BASE = 'https://<that-ngrok-subdomain>.ngrok-free.app';
-   ```
-   Commit + push. The Actions workflow redeploys Pages in ~1 min.
-
-Your live site: `https://igl.loukik.dev`
-
-## The ngrok free-tier catch
-
-Free ngrok gives a **new random URL every restart**, so you'd edit `config.js`
-and push each time. Fixes:
-- A **reserved ngrok domain** (paid) — stable URL, set it once.
-- Any stable tunnel (Cloudflare Tunnel, Tailscale Funnel) works the same way.
-
-## Notes
-
-- `ALLOWED_ORIGIN` is the origin only (`https://igl.loukik.dev`) — never include
-  a path or a trailing slash, or the CORS check fails.
-- Optional: put the backend behind `api.loukik.dev` with a reserved ngrok domain
-  (CNAME `api` → your ngrok domain) so the API URL is stable and on-brand.
-- Photos are committed to `public/photos/` and served by Pages directly (relative
-  paths), so they don't go through ngrok.
-- The backend still works fully standalone with no env vars: `npm start` serves
-  frontend + API at `http://localhost:3000` (same-origin, no CORS needed).
-- SQLite lives at `votes.sqlite` (override with `DB_PATH`); it's snapshotted to
-  `backups/` on every boot.
-
-## Keeping the backend running (macOS launchd)
-
-A launchd agent keeps the backend + ngrok alive across terminal close, logout,
-crashes, and reboots. It also auto-updates the deployed frontend whenever ngrok's
-URL changes (sets the `API_BASE` repo variable + redeploys).
-
-- Supervisor script: `scripts/serve.sh` (starts/monitors server + ngrok, repoints
-  the frontend on URL change; logs to `logs/`).
-- Agent: `~/Library/LaunchAgents/dev.loukik.igl.plist`, runs the script under
-  `caffeinate -s`, `KeepAlive` + `RunAtLoad`.
-
-Manage it:
-```bash
-launchctl kickstart -k gui/$(id -u)/dev.loukik.igl   # restart now
-launchctl bootout    gui/$(id -u)/dev.loukik.igl     # stop + disable
-launchctl bootstrap  gui/$(id -u) ~/Library/LaunchAgents/dev.loukik.igl.plist  # (re)load
-tail -f logs/supervisor.log                          # watch it
+```
+  Browser
+    |
+    |  https://igl.loukik.dev        (frontend: GitHub Pages)
+    |  static HTML/CSS/JS + /photos
+    v
+  igl.loukik.dev  --- /api/* fetch --->  https://iglapi.loukik.dev
+                                          (backend: Cloudflare Worker)
+                                                |
+                                                v
+                                          D1 database  (votes)
 ```
 
-### Lid-closed caveat (important)
-`caffeinate -s` only holds off sleep **on AC power**. On battery, closing the lid
-sleeps the Mac regardless, and everything pauses until it wakes. To run with the
-lid closed:
-- **Plug into AC power** (then `caffeinate -s` keeps it awake, lid closed), OR
-- For guaranteed lid-closed operation, run once (needs sudo, system setting):
-  `sudo pmset -c disablesleep 1`  (undo with `sudo pmset -c disablesleep 0`).
-When the Mac does sleep, the launchd agent brings everything back on wake, and the
-frontend auto-repoints if ngrok handed out a new URL.
+- **Frontend:** static `public/`, served by **GitHub Pages** at `igl.loukik.dev`.
+- **Backend:** a **Cloudflare Worker** (`worker/`) at `iglapi.loukik.dev`, a 1:1 port of `server.js`.
+- **Votes:** **Cloudflare D1** (SQLite) database `igl-votes`.
+
+## Frontend (GitHub Pages)
+
+Auto-deploys `public/` on push to `main` (`.github/workflows/deploy-pages.yml`).
+The workflow injects `public/config.js` from the **`API_BASE` repo variable** at build
+time (a static site has no runtime env), so the backend URL lives in GitHub settings.
+
+- Current value: `API_BASE = https://iglapi.loukik.dev`
+- To repoint the frontend at a different backend:
+  ```bash
+  gh variable set API_BASE -R LoukikNaik/igl-funny-or-not --body "https://NEW_URL"
+  gh workflow run deploy-pages.yml -R LoukikNaik/igl-funny-or-not
+  ```
+- Custom domain via `public/CNAME` (`igl.loukik.dev`) plus a Cloudflare DNS CNAME to
+  `loukiknaik.github.io` (DNS-only).
+
+## Backend (Cloudflare Worker + D1)
+
+Lives in `worker/`. Deploy after any change to the Worker **or `data.js`** (the roster
+is bundled into the Worker):
+
+```bash
+cd worker
+npx wrangler deploy
+```
+
+- **`wrangler.toml`**: D1 binding, the `iglapi.loukik.dev` custom domain (wrangler
+  provisions DNS + cert), `ALLOWED_ORIGIN` and `BLOCKED_IPS` vars.
+- **Secret:** `STATS_KEY` (protects `/api/stats`): `npx wrangler secret put STATS_KEY`.
+- **Photos:** the Worker can't read the filesystem, so which-photos-exist is baked at
+  build. After adding/removing files in `public/photos/`:
+  ```bash
+  node worker/build-manifest.mjs   # regenerates worker/src/photos.js
+  cd worker && npx wrangler deploy
+  ```
+
+### Editing the roster
+`data.js` is the single source of truth, bundled into the Worker. After editing it,
+**redeploy the Worker** (`cd worker && npx wrangler deploy`) for the change to go live.
+There is no server to restart anymore.
+
+### D1 (votes) operations
+The live votes are in D1, not the local `votes.sqlite` (that is now just history).
+
+```bash
+cd worker
+# ad-hoc query
+npx wrangler d1 execute igl-votes --remote --command "SELECT COUNT(*) FROM faceoffs"
+# voter breakdown helper (reads D1)
+node ../scripts/voters.js         # or -w to watch
+# backup: export the DB
+npx wrangler d1 export igl-votes --remote --output ../backups/d1-$(date +%Y%m%d).sql
+```
+
+## Local development
+
+`server.js` + `votes.sqlite` still work off the same `data.js` for quick local iteration:
+
+```bash
+npm start        # http://localhost:3000, serves frontend + API same-origin
+```
+
+This is dev-only; production is the Worker. The old ngrok/launchd supervisor is retired
+(the LaunchAgent is disabled at `~/Library/LaunchAgents/dev.loukik.igl.plist.disabled`).
+
+## Abuse / hardening
+
+- IP denylist: the `BLOCKED_IPS` var in `wrangler.toml` (comma-separated). The Worker
+  reads the client IP from Cloudflare's `CF-Connecting-IP`. Redeploy to apply.
+- Ballot-stuffing (random voter tokens) is still possible in principle. The strong fix
+  is **Cloudflare Turnstile** on the vote path, which is easy now that we are on Workers.

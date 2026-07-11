@@ -15,13 +15,17 @@ and is exposed via ngrok, see Deployment).
 
 ## Architecture
 
-- **Zero build step, near-zero dependencies.** Backend is one Node file using the
-  built-in `node:sqlite` (needs Node 22.5+). Frontend is plain HTML/CSS/JS. No
-  framework, no bundler, no npm install.
-- `server.js`, HTTP server: serves `public/` statically AND the `/api/*` JSON
-  endpoints. All vote/stat logic and the SQLite layer live here.
-- `data.js`, the roster: one array of people (`module.exports = [...]`). Pure
-  data, `require`d by the server. **This is the single source of truth for people.**
+- **Production runs on Cloudflare:** frontend on GitHub Pages, backend a Cloudflare
+  **Worker** (`worker/src/index.js`) on **D1**. `server.js` (Node + `node:sqlite`) is
+  now a local-dev mirror of the same API off `data.js`; the Worker is a 1:1 port of it.
+  Keep the two in sync when you change API logic.
+- `worker/`, the production backend: `src/index.js` (the Worker, D1 + Web Crypto +
+  CORS), `wrangler.toml` (D1 binding, `iglapi.loukik.dev` domain, vars), `schema.sql`,
+  `src/photos.js` (build-time manifest of which photos exist), `build-manifest.mjs`.
+- `server.js`, local-dev HTTP server: serves `public/` + `/api/*` off `node:sqlite`
+  (`votes.sqlite`). Same logic as the Worker; handy for quick iteration.
+- `data.js`, the roster: one array of people (`module.exports = [...]`). **The single
+  source of truth for people**, `require`d by `server.js` and bundled into the Worker.
 - `public/`, the deployed frontend:
   - `index.html`, face-off (swipe/click/arrow to vote, Tinder-style fling)
   - `leaderboard.html`, Elo rankings, search, per-person profile modal
@@ -112,35 +116,40 @@ Cards are ~4:4.4 portrait, top-anchored; crop faces accordingly.
 - **No em dashes** in any user-facing text (data blurbs, jokes, page copy). Use
   commas or periods. This was an explicit, repeated user preference.
 
-## Deployment
+## Deployment (all Cloudflare, always-on)
 
-Frontend → GitHub Pages at `igl.loukik.dev`. Backend → local `node server.js`
-exposed via **ngrok**; the frontend calls that URL. See `DEPLOY.md` for the full
-flow. Key points:
+Frontend on GitHub Pages (`igl.loukik.dev`), backend a Cloudflare **Worker**
+(`worker/`, at `iglapi.loukik.dev`) on **D1**. Full details in `DEPLOY.md`. Key points:
 - Repo is **public** (free-tier Pages can't publish from a private repo).
 - `.github/workflows/deploy-pages.yml` deploys `public/` on push, and **injects
-  `config.js` from the `API_BASE` repo variable** at build time (a static site
-  has no runtime env, so the backend URL is baked in during the Actions run).
-  To repoint at a new backend: `gh variable set API_BASE --body "<url>"` then
-  `gh workflow run deploy-pages.yml`. No code commit needed.
-- Backend must run with `ALLOWED_ORIGIN=https://igl.loukik.dev` for CORS + the
-  cross-site cookie fallback.
-- Free ngrok rotates its URL on restart → update the `API_BASE` variable + redeploy.
-- Custom domain lives via `public/CNAME` + a Cloudflare DNS CNAME
-  (`igl` → `loukiknaik.github.io`, DNS-only). Cloudflare token for DNS edits is
-  at `~/.config/cloudflare/api-token` (never commit it).
+  `config.js` from the `API_BASE` repo variable** at build time (a static site has
+  no runtime env). `API_BASE = https://iglapi.loukik.dev`. To change:
+  `gh variable set API_BASE --body "<url>"` then `gh workflow run deploy-pages.yml`.
+- **Backend deploy:** `cd worker && npx wrangler deploy`. Redeploy after editing the
+  Worker OR `data.js` (the roster is bundled in). After adding/removing photos, run
+  `node worker/build-manifest.mjs` first (bakes the which-photos-exist list).
+- Worker config in `worker/wrangler.toml`: D1 binding, `iglapi.loukik.dev` custom
+  domain (wrangler provisions DNS + cert), `ALLOWED_ORIGIN`, `BLOCKED_IPS`.
+  `STATS_KEY` is a wrangler secret.
+- Custom domains: `igl.loukik.dev` via `public/CNAME` + Cloudflare DNS CNAME to
+  `loukiknaik.github.io`; `iglapi.loukik.dev` auto-managed by wrangler. Cloudflare
+  DNS token is at `~/.config/cloudflare/api-token` (never commit it).
+- **Retired:** the old ngrok + `node server.js` + launchd supervisor. The LaunchAgent
+  is disabled (`~/Library/LaunchAgents/dev.loukik.igl.plist.disabled`). `server.js`
+  and `votes.sqlite` remain only for local dev.
 
 ## Gotchas
 
-- **Verify live deploys via `--resolve`**: this machine can't always DNS-resolve
+- **Editing `data.js` needs a Worker redeploy** now (`cd worker && npx wrangler deploy`),
+  not a server restart. It's bundled into the Worker at build time.
+- **Live votes are in D1, not `votes.sqlite`.** `votes.sqlite` is historical; query live
+  data with `npx wrangler d1 execute igl-votes --remote --command "..."` or
+  `node scripts/voters.js`.
+- **Verify live Pages via `--resolve`**: this machine can't always DNS-resolve
   `igl.loukik.dev` from `curl`; use
   `curl --resolve igl.loukik.dev:443:185.199.108.153 https://igl.loukik.dev/...`.
-- **Pages deploys fail intermittently** with a generic "try again later", just
-  re-run the workflow.
+- **Pages deploys fail intermittently** with a generic "try again later"; just re-run.
 - **Headless Chrome floors at ~485px CSS width** on this Mac regardless of
-  `--window-size`, and crops the screenshot, it looks like horizontal overflow
-  but isn't. Measure real overflow in-page (getBoundingClientRect) instead.
-- Don't delete `votes.sqlite` to "reset test data", use SQL `DELETE`. A vote DB
-  was lost early on this way; boot-time backups now mitigate it.
-- After editing `data.js`, no redeploy is needed for local, the backend serves
-  it live. The deployed site's data comes from whatever backend `API_BASE` points at.
+  `--window-size`, and crops the screenshot; it looks like horizontal overflow but
+  isn't. Measure real overflow in-page (getBoundingClientRect) instead.
+- Never delete a votes DB to "reset"; use SQL `DELETE`. A DB was lost early this way.
