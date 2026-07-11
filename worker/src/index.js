@@ -83,6 +83,27 @@ async function loadContext(env, vid) {
   }
   return { players, rstats, myScores };
 }
+// Normalize a client IP to a rate-limit key. IPv6 addresses rotate per-connection,
+// so a /128 limit is trivially evaded; key IPv6 by its /64 network prefix (the typical
+// single-customer allocation). IPv4 keeps its full address.
+function ipKey(ip) {
+  if (ip.includes(':')) return ip.split(':').slice(0, 4).join(':') + '::/64';
+  return ip;
+}
+// Per-IP flood guard: increment this IP-key's count for the current unix-minute and
+// return true if it now exceeds `limit`. Deliberately tight (40/min); the fastest real
+// single-user burst was 44/min, so an extreme-fast voter or a busy shared /64 may
+// occasionally get 429'd. Scripted floods get 429'd immediately.
+async function rateLimited(env, ip, limit = 40) {
+  const row = await env.DB.prepare(
+    `INSERT INTO rate(ip, bucket, n) VALUES(?1, CAST(strftime('%s','now') AS INTEGER) / 60, 1)
+     ON CONFLICT(ip, bucket) DO UPDATE SET n = n + 1 RETURNING n`).bind(ip).first();
+  // opportunistic cleanup when a fresh minute-bucket opens (keeps the table tiny)
+  if (row.n === 1) {
+    await env.DB.prepare(`DELETE FROM rate WHERE bucket < CAST(strftime('%s','now') AS INTEGER) / 60 - 5`).run();
+  }
+  return row.n > limit;
+}
 async function playerRow(env, id) {
   return (await env.DB.prepare('SELECT rating, wins, losses FROM players WHERE person_id = ?').bind(id).first())
     || { rating: 1000, wins: 0, losses: 0 };
@@ -148,6 +169,8 @@ export default {
       }
 
       if (method === 'POST' && path === '/api/faceoff') {
+        // per-IP flood guard (40 votes/min/IP, IPv6 keyed by /64). Reads/matchups are unlimited.
+        if (ip && await rateLimited(env, ipKey(ip), 40)) return json({ error: 'Whoa, slow down a sec.' }, 429, cors);
         const { winnerId, loserId } = body || {};
         if (!BY_ID.has(winnerId) || !BY_ID.has(loserId) || winnerId === loserId)
           return json({ error: 'bad ids' }, 400, cors);
