@@ -43,14 +43,14 @@ const API = {
 // exchange it for a short-lived signed session from the Worker, then carry that session
 // on every vote. The session secret never leaves the Worker, so it can't be forged.
 const TURNSTILE_SITEKEY = '0x4AAAAAADz7iDpkaXrOP7NA';
-let _tsWidget = null, _tsResolver = null;
+let _tsWidget = null, _tsSettleCur = null;
 function _whenTurnstile() {
   return new Promise((resolve, reject) => {
     if (window.turnstile) return resolve();
     let n = 0;
     const iv = setInterval(() => {
       if (window.turnstile) { clearInterval(iv); resolve(); }
-      else if (++n > 100) { clearInterval(iv); reject(new Error('turnstile load timeout')); }
+      else if (++n > 200) { clearInterval(iv); reject(new Error('turnstile load timeout')); }   // ~20s for slow mobile
     }, 100);
   });
 }
@@ -72,22 +72,29 @@ function _openGate() {
   document.body.appendChild(ov);
 }
 function _closeGate() { const ov = document.getElementById('verifyGate'); if (ov) ov.remove(); _tsWidget = null; }
-function _tsSettle(token) { const r = _tsResolver; _tsResolver = null; if (r) r(token); }
 async function _renderTurnstile() {
   await _whenTurnstile();
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { _tsResolver = null; reject(new Error('turnstile timeout')); }, 25000);
-    _tsResolver = (t) => { clearTimeout(timer); resolve(t); };
-    try {
-      if (_tsWidget === null) {
-        _tsWidget = window.turnstile.render('#tsBox', {
-          sitekey: TURNSTILE_SITEKEY, callback: _tsSettle,
-          'error-callback': () => {}, 'expired-callback': () => {},
-        });
-      } else {
-        window.turnstile.reset(_tsWidget);
-      }
-    } catch (e) { clearTimeout(timer); reject(e); }
+    let done = false, safety;
+    const finish = (ok, val) => { if (done) return; done = true; clearTimeout(safety); (ok ? resolve : reject)(val); };
+    safety = setTimeout(() => finish(false, new Error('turnstile timeout')), 90000);   // generous safety net
+    _tsSettleCur = finish;   // widget callbacks resolve/reject the CURRENT attempt (so retry works)
+    // render on the next frame so the modal is laid out first (mobile Safari iframe sizing)
+    requestAnimationFrame(() => {
+      try {
+        if (_tsWidget === null) {
+          _tsWidget = window.turnstile.render('#tsBox', {
+            sitekey: TURNSTILE_SITEKEY,
+            size: 'flexible',                 // fit the widget to the modal width on phones
+            callback: (t) => _tsSettleCur && _tsSettleCur(true, t),
+            'error-callback': () => _tsSettleCur && _tsSettleCur(false, new Error('turnstile error')),
+            'expired-callback': () => { try { window.turnstile.reset(_tsWidget); } catch {} },
+          });
+        } else {
+          window.turnstile.reset(_tsWidget);
+        }
+      } catch (e) { _tsSettleCur && _tsSettleCur(false, e); }
+    });
   });
 }
 function _waitRetryClick() {

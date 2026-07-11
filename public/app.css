@@ -202,7 +202,8 @@ button.btn:disabled { opacity: .4; cursor: default; }
 .verifyCard .verifyEmoji { font-size: 48px; line-height: 1; margin-bottom: 10px; }
 .verifyCard h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; color: var(--rank-ink); }
 .verifyCard p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 20px; }
-.verifyCard #tsBox { display: flex; justify-content: center; min-height: 65px; }
+.verifyCard #tsBox { display: flex; justify-content: center; min-height: 70px; margin: 4px 0; }
+.verifyCard #tsBox iframe { max-width: 100%; }
 .verifyErr { color: var(--accent2); font-size: 13px; margin: 12px 0 0; }
 .verifyRetry { width: 100%; margin-top: 12px; }
 .eloDelta {
@@ -390,6 +391,9 @@ tr.rowClick:hover .mini::after { opacity: 1; transform: translateX(0); }
   .modal .mBody { padding: 20px 18px; }
   .modal .mName { font-size: 22px; }
   .lockNotice { margin: 28px auto; padding: 26px 20px; }
+  /* give the Turnstile widget room on phones (it needs ~300px wide) */
+  .modalOverlay { padding: 10px; }
+  .verifyCard { padding: 26px 14px; max-width: 100%; }
 }
 
 /* very small phones */
