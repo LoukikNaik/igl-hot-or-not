@@ -44,7 +44,7 @@ function inPool(p, pool) {
   }
 }
 function corsHeaders(origin, env) {
-  const h = { 'Content-Type': 'application/json' };
+  const h = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' };
   if (env.ALLOWED_ORIGIN && origin === env.ALLOWED_ORIGIN) {
     h['Access-Control-Allow-Origin'] = origin;
     h['Access-Control-Allow-Credentials'] = 'true';
@@ -269,6 +269,7 @@ export default {
           p.showScore !== null && p.avgScore !== null && Math.abs(p.avgScore - p.showScore) <= 0.5);
         const totals = {
           faceoffVotes: (await env.DB.prepare('SELECT COUNT(*) AS n FROM faceoffs').first()).n,
+          voters: (await env.DB.prepare('SELECT COUNT(DISTINCT voter_id) AS n FROM faceoffs').first()).n,
           scoreVotes: (await env.DB.prepare('SELECT COUNT(*) AS n FROM ratings').first()).n,
           people: VISIBLE.length,
         };
